@@ -1,0 +1,1857 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0057a8">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="VHDV English">
+<meta name="description" content="Sun World Hòn Thơm – English Learning Platform">
+<title>Sun World Hòn Thơm – English Learning</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<style>
+:root{--primary:#0057a8;--primary-dark:#003d7a;--accent:#f5a623;--success:#27ae60;--danger:#e74c3c;--bg:#f0f4f8;--card:#fff;--text:#1a2e44;--muted:#6b7c93;--border:#dce3ec;--sw:240px}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text)}
+/* ── SETUP / LOGIN ── */
+#setupScreen,#loginScreen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#0057a8,#001f3f);padding:16px}
+.auth-box{background:#fff;border-radius:18px;padding:36px 32px;width:100%;max-width:440px;box-shadow:0 24px 60px rgba(0,0,50,.35)}
+.auth-logo{text-align:center;margin-bottom:22px}
+.auth-logo .brand{font-size:22px;font-weight:800;color:var(--primary)}
+.auth-logo .sub{font-size:12px;color:var(--muted);margin-top:3px}
+.auth-tabs{display:flex;margin-bottom:20px;border-bottom:2px solid var(--border)}
+.auth-tab{flex:1;padding:9px;font-size:14px;font-weight:600;color:var(--muted);cursor:pointer;background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;transition:.2s}
+.auth-tab.active{color:var(--primary);border-bottom-color:var(--primary)}
+.auth-panel{display:none}.auth-panel.active{display:block}
+.fg{margin-bottom:13px}
+.fg label{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px}
+.fg input,.fg select,.fg textarea{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;outline:none;transition:.2s;font-family:inherit;background:#fff}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--primary)}
+.input-eye{position:relative}
+.input-eye input{padding-right:38px}
+.eye-btn{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:15px;color:var(--muted)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 18px;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:.2s;text-decoration:none}
+.btn-primary{background:var(--primary);color:#fff}.btn-primary:hover{background:var(--primary-dark)}
+.btn-accent{background:var(--accent);color:#fff}.btn-accent:hover{background:#e0941a}
+.btn-success{background:var(--success);color:#fff}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-ghost{background:transparent;color:var(--primary);border:1.5px solid var(--primary)}.btn-ghost:hover{background:var(--primary);color:#fff}
+.btn-muted{background:#f0f4f8;color:var(--muted);border:1px solid var(--border)}.btn-muted:hover{background:var(--border)}
+.btn-sm{padding:6px 12px;font-size:12px}
+.btn-block{width:100%;margin-top:6px}
+.err-msg{color:var(--danger);font-size:13px;margin-top:8px;text-align:center;display:none}
+.ok-msg{color:var(--success);font-size:13px;margin-top:8px;text-align:center;display:none}
+.info-box{background:#e8f0fe;border-radius:9px;padding:11px 14px;font-size:13px;color:var(--primary);margin-bottom:14px;line-height:1.6}
+.warn-box{background:#fff3cd;border-radius:9px;padding:11px 14px;font-size:13px;color:#664d03;margin-bottom:14px;line-height:1.6}
+.divider{display:flex;align-items:center;gap:10px;margin:14px 0;color:var(--muted);font-size:12px}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border)}
+/* ── SETUP STEPS ── */
+.setup-step{background:#f8fafc;border-radius:10px;padding:14px 16px;margin-bottom:10px;border:1.5px solid var(--border)}
+.setup-step .step-num{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--primary);color:#fff;font-size:12px;font-weight:700;margin-right:8px;flex-shrink:0}
+.setup-step .step-text{font-size:13px;line-height:1.6}
+.setup-step code{background:#e8f0fe;padding:2px 6px;border-radius:4px;font-size:12px;font-family:monospace;color:var(--primary)}
+/* ── APP SHELL ── */
+#app{display:none;height:100vh;flex-direction:row;overflow:hidden}
+#sidebar{width:var(--sw);background:var(--primary-dark);color:#fff;display:flex;flex-direction:column;height:100vh;overflow-y:auto;flex-shrink:0;transition:.3s}
+.sb-header{padding:18px 16px 12px;border-bottom:1px solid rgba(255,255,255,.1)}
+.sb-brand{font-size:14px;font-weight:800;line-height:1.3}
+.sb-brand small{font-size:11px;opacity:.65;display:block;font-weight:400;margin-top:1px}
+.sb-user{padding:10px 16px;border-bottom:1px solid rgba(255,255,255,.08)}
+.sb-user .sbu-name{font-size:13px;font-weight:700;color:#fff}
+.sb-user .sbu-role{font-size:11px;opacity:.7;margin-top:1px}
+.sb-user .sbu-class{font-size:11px;margin-top:3px;background:rgba(245,166,35,.25);color:var(--accent);padding:1px 7px;border-radius:8px;display:inline-block}
+nav{flex:1;padding:8px 0}
+.nav-sec{padding:8px 16px 3px;font-size:10px;letter-spacing:1px;text-transform:uppercase;opacity:.45}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 16px;cursor:pointer;font-size:13px;opacity:.8;transition:.15s;border-left:3px solid transparent}
+.nav-item:hover{background:rgba(255,255,255,.07);opacity:1}
+.nav-item.active{background:rgba(255,255,255,.12);opacity:1;border-left-color:var(--accent)}
+.nav-item .ni{font-size:15px;width:20px;text-align:center;flex-shrink:0}
+.sb-footer{padding:10px 14px;border-top:1px solid rgba(255,255,255,.08)}
+.sb-footer .btn{background:rgba(255,255,255,.1);color:#fff;border:none;font-size:12px;width:100%;padding:7px 12px}
+.sb-footer .btn:hover{background:rgba(255,255,255,.2)}
+#mainContent{flex:1;overflow-y:auto;padding:24px;min-height:0}
+/* ── PAGES ── */
+.page{display:none}.page.active{display:block}
+.ph{margin-bottom:20px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.ph h1{font-size:21px;font-weight:800}
+.ph p{color:var(--muted);font-size:13px;margin-top:3px}
+.ph-left{flex:1}
+/* ── CARDS ── */
+.card{background:var(--card);border-radius:12px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,.06);border:1px solid var(--border)}
+.card-title{font-size:14px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:7px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:13px}
+/* ── STAT CARDS ── */
+.sc{background:var(--card);border-radius:12px;padding:16px 18px;border:1px solid var(--border);box-shadow:0 2px 6px rgba(0,0,0,.05);position:relative;overflow:hidden}
+.sc::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%}
+.sc.c1::before{background:var(--primary)}.sc.c2::before{background:var(--accent)}.sc.c3::before{background:var(--success)}.sc.c4::before{background:var(--danger)}
+.sc .lbl{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+.sc .val{font-size:28px;font-weight:800;color:var(--text);margin:5px 0 1px}
+.sc .sub{font-size:12px;color:var(--muted)}
+/* ── INNER TABS ── */
+.itabs{display:flex;border-bottom:2px solid var(--border);margin-bottom:18px;overflow-x:auto}
+.itab{padding:9px 16px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;white-space:nowrap;transition:.2s}
+.itab.active{color:var(--primary);border-bottom-color:var(--primary)}
+.ipanel{display:none}.ipanel.active{display:block}
+/* ── VOCAB ── */
+.vtabs{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:16px}
+.vtab{padding:6px 13px;border-radius:18px;font-size:12px;font-weight:600;cursor:pointer;background:var(--border);color:var(--muted);border:none;transition:.2s}
+.vtab.active{background:var(--primary);color:#fff}
+.vgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:11px}
+.vc{background:var(--card);border:1.5px solid var(--border);border-radius:10px;padding:13px 15px;cursor:pointer;transition:.2s;position:relative}
+.vc:hover{border-color:var(--primary);box-shadow:0 3px 10px rgba(0,87,168,.1)}
+.vc .ven{font-size:15px;font-weight:700;color:var(--primary)}
+.vc .vvn{font-size:12px;color:var(--muted);margin-top:2px}
+.vc .vph{font-size:11px;color:var(--accent);font-style:italic;margin-top:1px}
+.vc .vex{font-size:12px;color:#555;margin-top:7px;border-top:1px solid var(--border);padding-top:7px;display:none}
+.vc.open .vex{display:block}
+.vc .vtag{position:absolute;top:9px;right:9px;font-size:10px;padding:2px 6px;border-radius:8px;background:#e8f0fe;color:var(--primary);font-weight:600}
+.vc .custom-mark{position:absolute;bottom:7px;right:9px;font-size:10px;color:var(--success);font-weight:600}
+/* ── FLASHCARD ── */
+.fcwrap{display:flex;flex-direction:column;align-items:center;gap:14px;padding:8px 0}
+.flashcard{width:360px;height:210px;perspective:800px;cursor:pointer;max-width:100%}
+.fc-inner{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:.5s}
+.flashcard.flipped .fc-inner{transform:rotateY(180deg)}
+.fc-front,.fc-back{position:absolute;width:100%;height:100%;backface-visibility:hidden;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:22px;text-align:center;box-shadow:0 6px 20px rgba(0,0,0,.1)}
+.fc-front{background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff}
+.fc-back{background:#fff;color:var(--text);transform:rotateY(180deg);border:2px solid var(--primary)}
+.fc-front .fcw{font-size:26px;font-weight:800}
+.fc-back .fcvn{font-size:20px;font-weight:700;color:var(--primary)}
+.fc-back .fcph{font-size:13px;color:var(--accent);margin-top:3px}
+.fc-back .fcex{font-size:12px;color:var(--muted);margin-top:8px;font-style:italic}
+/* ── DIALOGUE ── */
+.dlg-card{background:var(--card);border-radius:12px;border:1px solid var(--border);overflow:hidden;margin-bottom:14px}
+.dlg-head{padding:12px 16px;background:linear-gradient(90deg,var(--primary),#1a73e8);color:#fff;display:flex;align-items:center;justify-content:space-between}
+.dlg-title{font-weight:700;font-size:14px}
+.dlg-badges{display:flex;gap:6px;align-items:center}
+.dlg-level{font-size:10px;background:rgba(255,255,255,.2);padding:2px 7px;border-radius:8px}
+.dlg-custom{font-size:10px;background:rgba(245,166,35,.4);padding:2px 7px;border-radius:8px}
+.dlg-body{padding:14px 16px}
+.dlg-line{display:flex;gap:9px;margin-bottom:9px;align-items:flex-start}
+.dlg-role{font-size:11px;font-weight:700;min-width:65px;padding-top:2px;text-transform:uppercase;letter-spacing:.4px}
+.dlg-role.guest{color:var(--danger)}.dlg-role.staff{color:var(--primary)}
+.dlg-text{font-size:13px;line-height:1.5;flex:1}
+.dlg-vn{font-size:11px;color:var(--muted);font-style:italic;margin-top:1px}
+/* ── DIALOGUE EDITOR ── */
+.dlg-line-editor{background:#f8fafc;border-radius:8px;padding:10px 12px;margin-bottom:8px;border:1px solid var(--border)}
+.dlg-line-row{display:flex;gap:8px;margin-bottom:6px}
+/* ── CHAT ── */
+.chat-wrap{display:flex;gap:14px;height:calc(100vh - 175px);min-height:400px}
+.chat-scenarios{width:210px;flex-shrink:0;overflow-y:auto}
+.scenario-item{padding:9px 11px;border-radius:9px;cursor:pointer;border:1.5px solid var(--border);font-size:13px;transition:.2s;background:var(--card);margin-bottom:7px}
+.scenario-item:hover,.scenario-item.active{border-color:var(--primary);background:#e8f0fe;color:var(--primary)}
+.scenario-item .st{font-weight:600;font-size:13px}
+.scenario-item .sd{font-size:11px;color:var(--muted);margin-top:1px}
+.chat-main{flex:1;display:flex;flex-direction:column;background:var(--card);border-radius:12px;border:1px solid var(--border);overflow:hidden;min-width:0}
+.chat-hdr{padding:12px 16px;border-bottom:1px solid var(--border);background:#f8fafc;display:flex;align-items:center;gap:9px}
+.chat-av{width:34px;height:34px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.chat-name{font-weight:700;font-size:13px}
+.chat-status{font-size:11px;color:var(--success)}
+.chat-msgs{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+.msg{max-width:76%;display:flex;flex-direction:column;gap:3px}
+.msg.bot{align-self:flex-start}.msg.user{align-self:flex-end}
+.msg-b{padding:9px 13px;border-radius:11px;font-size:13px;line-height:1.5}
+.msg.bot .msg-b{background:#f0f4f8;color:var(--text);border-radius:4px 11px 11px 11px}
+.msg.user .msg-b{background:var(--primary);color:#fff;border-radius:11px 4px 11px 11px}
+.msg-t{font-size:10px;color:var(--muted)}.msg.user .msg-t{text-align:right}
+.chat-sugs{padding:7px 14px;display:flex;gap:7px;flex-wrap:wrap;border-top:1px solid var(--border);background:#fafbfc}
+.sug{padding:4px 10px;background:#e8f0fe;color:var(--primary);border-radius:12px;font-size:12px;cursor:pointer;border:none;font-weight:500;transition:.2s}
+.sug:hover{background:var(--primary);color:#fff}
+.chat-inp-row{padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:9px}
+.chat-inp{flex:1;padding:9px 13px;border:1.5px solid var(--border);border-radius:18px;font-size:13px;outline:none;transition:.2s}
+.chat-inp:focus{border-color:var(--primary)}
+.chat-send{padding:9px 16px;background:var(--primary);color:#fff;border:none;border-radius:18px;font-size:13px;font-weight:600;cursor:pointer;transition:.2s}
+.chat-send:hover{background:var(--primary-dark)}
+.score-badge{display:inline-flex;align-items:center;gap:3px;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700}
+.sg{background:#d4edda;color:#155724}.so{background:#fff3cd;color:#856404}.sb2{background:#f8d7da;color:#721c24}
+/* ── ASSIGNMENTS ── */
+.asgn-card{background:var(--card);border-radius:10px;border:1.5px solid var(--border);padding:14px 16px;transition:.2s;margin-bottom:10px}
+.asgn-card:hover{border-color:var(--primary)}
+.asgn-hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.asgn-title{font-weight:700;font-size:14px}
+.asgn-meta{font-size:11px;color:var(--muted);margin-top:3px}
+.asgn-meta span{margin-right:10px}
+.asgn-body{margin-top:10px;font-size:13px;color:#444;line-height:1.6}
+.asgn-actions{margin-top:10px;display:flex;gap:7px;flex-wrap:wrap}
+.badge{display:inline-block;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700}
+.b-new{background:#cfe2ff;color:#084298}.b-done{background:#d1e7dd;color:#0a3622}
+.b-graded{background:#d4edda;color:#155724}.b-pending{background:#fff3cd;color:#664d03}
+/* ── PROGRESS ── */
+.pb-wrap{background:#e9ecef;border-radius:8px;height:8px;overflow:hidden}
+.pb{height:100%;background:var(--primary);border-radius:8px;transition:.5s}
+.pb.ac{background:var(--accent)}.pb.su{background:var(--success)}
+/* ── ADMIN / TABLES ── */
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{background:#f0f4f8;padding:9px 11px;text-align:left;border-bottom:1px solid var(--border);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;font-weight:700}
+.tbl td{padding:9px 11px;border-bottom:1px solid var(--border);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:#f8fafc}
+.search-bar{padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;outline:none;width:220px}
+.search-bar:focus{border-color:var(--primary)}
+.filter-sel{padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;outline:none}
+.filter-sel:focus{border-color:var(--primary)}
+/* bar charts */
+.bar-chart{display:flex;flex-direction:column;gap:7px}
+.bar-row{display:flex;align-items:center;gap:9px;font-size:12px}
+.bar-lbl{width:175px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar-track{flex:1;background:#e9ecef;border-radius:5px;height:14px;overflow:hidden}
+.bar-fill{height:100%;border-radius:5px;background:var(--primary);transition:.5s}
+.bar-val{width:32px;text-align:right;font-weight:700;color:var(--muted)}
+/* activity */
+.act-feed{display:flex;flex-direction:column;gap:7px;max-height:280px;overflow-y:auto}
+.act-item{display:flex;gap:9px;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px}
+.act-ico{font-size:15px;width:22px;flex-shrink:0}
+.act-time{font-size:10px;color:var(--muted);margin-top:2px}
+/* badges */
+.class-badge{display:inline-block;padding:2px 7px;border-radius:8px;font-size:11px;font-weight:700;background:#e8f0fe;color:var(--primary)}
+.dept-badge{display:inline-block;padding:2px 7px;border-radius:8px;font-size:11px;font-weight:700;background:#fef3cd;color:#856404}
+.role-badge-admin{background:#f8d7da;color:#842029;display:inline-block;padding:2px 7px;border-radius:8px;font-size:11px;font-weight:700}
+.role-badge-teacher{background:#d1e7dd;color:#0a3622;display:inline-block;padding:2px 7px;border-radius:8px;font-size:11px;font-weight:700}
+/* ── VOCAB EDITOR ── */
+.ve-form{background:#f8fafc;border-radius:10px;padding:16px;border:1.5px dashed var(--border);margin-bottom:18px}
+.cvi{display:flex;align-items:center;gap:9px;padding:9px 12px;background:var(--card);border-radius:8px;border:1px solid var(--border);margin-bottom:5px;font-size:13px}
+.cvi-en{font-weight:700;color:var(--primary);min-width:130px;flex-shrink:0}
+.cvi-vn{color:var(--muted);flex:1}
+/* ── MODAL ── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;align-items:center;justify-content:center;padding:16px}
+.overlay.open{display:flex}
+.modal{background:#fff;border-radius:14px;padding:26px;width:100%;max-width:540px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal h3{font-size:17px;font-weight:700;margin-bottom:16px}
+.modal-footer{margin-top:18px;display:flex;gap:9px;justify-content:flex-end}
+textarea{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;outline:none;resize:vertical;font-family:inherit;min-height:90px}
+textarea:focus{border-color:var(--primary)}
+/* ── QUIZ ── */
+.quiz-q{font-size:15px;font-weight:600;margin-bottom:14px;line-height:1.5}
+.quiz-opts{display:flex;flex-direction:column;gap:8px}
+.quiz-opt{padding:10px 14px;border:1.5px solid var(--border);border-radius:9px;cursor:pointer;font-size:13px;transition:.2s;background:#fff}
+.quiz-opt:hover{border-color:var(--primary);background:#e8f0fe}
+.quiz-opt.correct{background:#d4edda;border-color:var(--success);color:#155724;font-weight:600}
+.quiz-opt.wrong{background:#f8d7da;border-color:var(--danger);color:#721c24}
+.quiz-opt.disabled{pointer-events:none}
+.quiz-fb{margin-top:12px;padding:10px 14px;border-radius:8px;font-size:13px;display:none}
+.quiz-fb.show{display:block}
+.quiz-fb.good{background:#d4edda;color:#155724}
+.quiz-fb.bad{background:#f8d7da;color:#721c24}
+/* ── SYNC BANNER ── */
+#syncBanner{display:none;position:fixed;top:0;left:0;right:0;z-index:999;background:var(--accent);color:#fff;text-align:center;padding:8px;font-size:13px;font-weight:600}
+#offlineBanner{display:none;position:fixed;bottom:0;left:0;right:0;z-index:999;background:var(--danger);color:#fff;text-align:center;padding:7px;font-size:13px}
+/* ── RESPONSIVE ── */
+@media(max-width:768px){
+  #sidebar{position:fixed;left:-100%;top:0;height:100%;z-index:200;transition:.3s}
+  #sidebar.open{left:0}
+  #mainContent{padding:16px}
+  .g2,.g3,.g4{grid-template-columns:1fr}
+  .chat-wrap{flex-direction:column;height:auto}
+  .chat-scenarios{width:100%;max-height:150px}
+  .flashcard{width:100%;max-width:340px}
+  .hamburger{display:flex!important}
+  .chat-msgs{height:300px}
+}
+.hamburger{display:none;align-items:center;justify-content:center;width:36px;height:36px;border-radius:8px;background:var(--primary);color:#fff;font-size:18px;cursor:pointer;border:none;flex-shrink:0}
+.overlay-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:150}
+.overlay-bg.open{display:block}
+/* ── PRINT ── */
+@media print{
+  #sidebar,#syncBanner,#offlineBanner,.btn,.auth-tabs,.itabs,.chat-inp-row,.chat-sugs,.ve-form,.hamburger,.sb-footer{display:none!important}
+  #mainContent{margin-left:0!important;padding:0!important}
+  body{background:#fff}
+  .page{display:none!important}.page.print-target{display:block!important}
+  .tbl{font-size:11px}
+}
+</style>
+</head>
+<body>
+<div id="syncBanner">🔄 Đang đồng bộ dữ liệu...</div>
+<div id="offlineBanner">📵 Mất kết nối – Đang dùng dữ liệu cục bộ</div>
+
+<!-- ══ SETUP SCREEN ══ -->
+<div id="setupScreen" style="display:none">
+  <div class="auth-box" style="max-width:520px">
+    <div class="auth-logo">
+      <div class="brand">🌴 Sun World Hòn Thơm</div>
+      <div class="sub">English Learning Platform – Hướng dẫn cài đặt</div>
+    </div>
+    <div class="warn-box">⚠️ Chưa cấu hình Firebase. Dữ liệu hiện tại chỉ lưu trên thiết bị này và <strong>không chia sẻ</strong> giữa các người dùng. Để dùng online, hãy làm theo các bước sau:</div>
+    <div class="setup-step"><span class="step-num">1</span><span class="step-text">Truy cập <a href="https://console.firebase.google.com" target="_blank" style="color:var(--primary)">console.firebase.google.com</a> → Tạo project mới (đặt tên tuỳ ý)</span></div>
+    <div class="setup-step"><span class="step-num">2</span><span class="step-text">Trong project: <code>Authentication</code> → <code>Sign-in method</code> → Bật <code>Email/Password</code></span></div>
+    <div class="setup-step"><span class="step-num">3</span><span class="step-text">Trong project: <code>Firestore Database</code> → <code>Create database</code> → chọn <code>Start in test mode</code> (có thể khóa sau)</span></div>
+    <div class="setup-step"><span class="step-num">4</span><span class="step-text">Vào <code>Project settings</code> → <code>Your apps</code> → Thêm Web App → Copy đoạn <code>firebaseConfig</code></span></div>
+    <div class="setup-step"><span class="step-num">5</span><span class="step-text">Mở file <code>index.html</code> bằng Notepad → Tìm dòng <code>FIREBASE_CONFIG</code> → Dán config của bạn vào</span></div>
+    <button class="btn btn-muted btn-block" style="margin-top:14px" onclick="dismissSetup()">Tiếp tục dùng bản local (không chia sẻ dữ liệu)</button>
+  </div>
+</div>
+
+<!-- ══ LOGIN SCREEN ══ -->
+<div id="loginScreen">
+  <div class="auth-box">
+    <div class="auth-logo">
+      <div class="brand">🌴 Sun World Hòn Thơm</div>
+      <div class="sub">English Learning Platform – Phòng Vận hành Dịch vụ</div>
+    </div>
+    <div id="firebaseBadge" class="info-box" style="display:none;font-size:12px">🟢 <strong>Chế độ Online</strong> – Dữ liệu đồng bộ toàn bộ người dùng</div>
+    <div id="localBadge" class="warn-box" style="font-size:12px">🟡 <strong>Chế độ Local</strong> – Dữ liệu chỉ lưu trên thiết bị này. <a href="#" onclick="document.getElementById('setupScreen').style.display='flex'" style="color:var(--primary)">Xem hướng dẫn cài đặt online →</a></div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuthTab('login')">🔐 Đăng nhập</button>
+      <button class="auth-tab" onclick="switchAuthTab('register')">📋 Đăng ký học viên</button>
+    </div>
+    <!-- Login -->
+    <div id="authLogin" class="auth-panel active">
+      <div class="fg">
+        <label>Vai trò</label>
+        <select id="loginRole" onchange="toggleRoleHint()">
+          <option value="student">👤 Học viên</option>
+          <option value="teacher">👩‍🏫 Giảng viên</option>
+          <option value="admin">🛡️ Quản lý</option>
+        </select>
+      </div>
+      <div class="fg"><label>Tên đăng nhập</label><input id="loginUser" placeholder="Nhập username" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <div class="fg"><label>Mật khẩu</label>
+        <div class="input-eye"><input type="password" id="loginPass" placeholder="Nhập mật khẩu" onkeydown="if(event.key==='Enter')doLogin()"><button class="eye-btn" onclick="togglePwd('loginPass',this)">👁</button></div>
+      </div>
+      <button class="btn btn-primary btn-block" onclick="doLogin()">Đăng nhập →</button>
+      <div id="loginErr" class="err-msg"></div>
+      <div id="teacherHint" style="display:none;margin-top:10px;font-size:12px;color:var(--muted);text-align:center">🔒 Tài khoản GV/Quản lý do quản trị cấp</div>
+      <div class="divider">Demo nhanh</div>
+      <button class="btn btn-muted btn-block btn-sm" onclick="quickLogin('sv_an','123456','student')">👤 Đăng nhập học viên mẫu</button>
+    </div>
+    <!-- Register -->
+    <div id="authRegister" class="auth-panel">
+      <div class="info-box">📌 Chỉ dành cho <strong>Học viên</strong>. Tài khoản GV do quản trị cấp.</div>
+      <div class="g2" style="gap:10px">
+        <div class="fg" style="margin:0"><label>Họ tên *</label><input id="regName" placeholder="Nguyễn Văn A"></div>
+        <div class="fg" style="margin:0"><label>Mã NV *</label><input id="regId" placeholder="SW001"></div>
+      </div>
+      <div class="fg"><label>Tổ / Bộ phận *</label>
+        <select id="regDept">
+          <option value="">-- Chọn tổ --</option>
+          <option>Tổ Soát vé</option><option>Tổ Hướng dẫn cáp</option>
+          <option>Tổ Vận hành Show &amp; Cầu hôn</option><option>Tổ Lái xe</option>
+          <option>Tổ Hướng dẫn viên tại điểm</option><option>Tổ Biểu diễn</option>
+          <option>Tổ CSKH</option><option>Tổ Y tế</option>
+        </select>
+      </div>
+      <div class="fg"><label>Lớp học *</label>
+        <select id="regClass">
+          <option value="">-- Chọn lớp --</option>
+          <option>A1 – Beginner</option><option>A2 – Elementary</option>
+          <option>B1 – Pre-Intermediate</option><option>B2 – Intermediate</option>
+        </select>
+      </div>
+      <div class="fg"><label>Tên đăng nhập *</label><input id="regUser" placeholder="vd: van_an (không dấu)"></div>
+      <div class="fg"><label>Mật khẩu *</label>
+        <div class="input-eye"><input type="password" id="regPass" placeholder="Tối thiểu 6 ký tự"><button class="eye-btn" onclick="togglePwd('regPass',this)">👁</button></div>
+      </div>
+      <div class="fg"><label>Xác nhận mật khẩu *</label><input type="password" id="regPass2" placeholder="Nhập lại"></div>
+      <button class="btn btn-primary btn-block" onclick="registerStudent()">Đăng ký →</button>
+      <div id="regErr" class="err-msg"></div><div id="regOk" class="ok-msg"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ APP SHELL ══ -->
+<div id="app">
+  <div class="overlay-bg" id="sidebarBg" onclick="closeSidebar()"></div>
+  <div id="sidebar">
+    <div class="sb-header">
+      <div class="sb-brand">🌴 Sun World Hòn Thơm<small>English Learning</small></div>
+    </div>
+    <div class="sb-user">
+      <div class="sbu-name" id="sbName">—</div>
+      <div class="sbu-role" id="sbRole">—</div>
+      <div id="sbClass"></div>
+    </div>
+    <nav id="sidebarNav"></nav>
+    <div class="sb-footer"><button class="btn" onclick="doLogout()">⬅ Đăng xuất</button></div>
+  </div>
+
+  <div id="mainContent">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
+      <button class="hamburger" id="hamburger" onclick="toggleSidebar()">☰</button>
+      <div id="pageTitle" style="font-size:16px;font-weight:700;color:var(--primary)"></div>
+    </div>
+
+    <!-- STUDENT DASHBOARD -->
+    <div class="page" id="page-dashboard">
+      <div class="ph"><div class="ph-left"><h1>📊 Tổng quan</h1><p id="dashWelcome"></p></div></div>
+      <div class="g4" id="dashStats" style="margin-bottom:18px"></div>
+      <div class="g2">
+        <div class="card"><div class="card-title">📋 Bài tập mới nhất</div><div id="dashAssigns"></div></div>
+        <div class="card"><div class="card-title">🎯 Gợi ý hôm nay</div><div id="dashTips"></div></div>
+      </div>
+    </div>
+
+    <!-- VOCABULARY -->
+    <div class="page" id="page-vocab">
+      <div class="ph"><div class="ph-left"><h1>📚 Từ vựng & Hội thoại</h1><p>Vocabulary & Dialogue – Sun World Hòn Thơm</p></div></div>
+      <div class="itabs">
+        <div class="itab active" onclick="switchI('vocab','cards')">Thẻ từ vựng</div>
+        <div class="itab" onclick="switchI('vocab','flash')">Flashcard</div>
+        <div class="itab" onclick="switchI('vocab','dialogue')">Hội thoại mẫu</div>
+        <div class="itab" onclick="switchI('vocab','quiz')">Kiểm tra nhanh</div>
+      </div>
+      <div class="ipanel active" id="vocab-cards"><div class="vtabs" id="vcatTabs"></div><div class="vgrid" id="vgrid"></div></div>
+      <div class="ipanel" id="vocab-flash">
+        <div class="fcwrap">
+          <div class="flashcard" id="flashcard" onclick="flipCard()">
+            <div class="fc-inner">
+              <div class="fc-front"><div class="fcw" id="fcW">—</div><div style="font-size:12px;opacity:.7;margin-top:8px">Click để xem nghĩa</div></div>
+              <div class="fc-back"><div class="fcvn" id="fcVn">—</div><div class="fcph" id="fcPh">—</div><div class="fcex" id="fcEx">—</div></div>
+            </div>
+          </div>
+          <div id="fcProg" style="font-size:12px;color:var(--muted)">1/1</div>
+          <div style="display:flex;gap:9px"><button class="btn btn-ghost btn-sm" onclick="fcPrev()">← Trước</button><button class="btn btn-primary btn-sm" onclick="fcNext()">Tiếp →</button></div>
+        </div>
+      </div>
+      <div class="ipanel" id="vocab-dialogue"><div id="dlgList"></div></div>
+      <div class="ipanel" id="vocab-quiz">
+        <div class="card" style="max-width:520px"><div class="card-title">🧠 Kiểm tra nhanh</div><div id="quizBox"></div><div style="margin-top:14px"><button class="btn btn-primary" onclick="nextQuiz()">Câu tiếp →</button></div></div>
+      </div>
+    </div>
+
+    <!-- CHAT PRACTICE -->
+    <div class="page" id="page-chat">
+      <div class="ph"><div class="ph-left"><h1>💬 Luyện tập hội thoại</h1><p>Thực hành trả lời khách bằng tiếng Anh</p></div></div>
+      <div class="chat-wrap">
+        <div class="chat-scenarios"><div style="font-size:13px;font-weight:700;margin-bottom:8px">🎭 Tình huống</div><div id="scenList"></div></div>
+        <div class="chat-main">
+          <div class="chat-hdr">
+            <div class="chat-av">👤</div>
+            <div><div class="chat-name" id="chatTitle">Chọn tình huống</div><div class="chat-status">● Online</div></div>
+            <div style="margin-left:auto"><button class="btn btn-ghost btn-sm" onclick="resetChat()">🔄 Lại</button></div>
+          </div>
+          <div class="chat-msgs" id="chatMsgs"><div style="text-align:center;color:var(--muted);padding:30px;font-size:13px">← Chọn tình huống để bắt đầu</div></div>
+          <div class="chat-sugs" id="chatSugs"></div>
+          <div class="chat-inp-row">
+            <input class="chat-inp" id="chatInp" placeholder="Nhập tiếng Anh..." onkeydown="if(event.key==='Enter')sendChat()">
+            <button class="chat-send" onclick="sendChat()">Gửi</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STUDENT ASSIGNMENTS -->
+    <div class="page" id="page-assignments">
+      <div class="ph"><div class="ph-left"><h1>📝 Bài tập của tôi</h1><p>Danh sách bài tập từ giảng viên</p></div></div>
+      <div id="stuAssignList"></div>
+    </div>
+
+    <!-- TEACHER DASHBOARD -->
+    <div class="page" id="page-teacher-dashboard">
+      <div class="ph"><div class="ph-left"><h1>📊 Dashboard Giảng viên</h1><p id="teacherDashSub"></p></div></div>
+      <div class="g4" id="tDashStats" style="margin-bottom:18px"></div>
+      <div class="g2">
+        <div class="card"><div class="card-title">👥 Học viên lớp tôi</div><div id="tDashStudents"></div></div>
+        <div class="card"><div class="card-title">📋 Bài tập gần đây</div><div id="tDashAssigns"></div></div>
+      </div>
+    </div>
+
+    <!-- TEACHER ASSIGNMENTS -->
+    <div class="page" id="page-teacher-assignments">
+      <div class="ph"><div class="ph-left"><h1>📝 Quản lý bài tập</h1></div><button class="btn btn-primary btn-sm" onclick="openCreateAssign()">+ Tạo bài tập</button></div>
+      <div class="itabs">
+        <div class="itab active" onclick="switchI('ta','all')">Tất cả</div>
+        <div class="itab" onclick="switchI('ta','pending')">Chờ chấm</div>
+        <div class="itab" onclick="switchI('ta','graded')">Đã chấm</div>
+      </div>
+      <div class="ipanel active" id="ta-all"><div id="taAll"></div></div>
+      <div class="ipanel" id="ta-pending"><div id="taPending"></div></div>
+      <div class="ipanel" id="ta-graded"><div id="taGraded"></div></div>
+    </div>
+
+    <!-- TEACHER VOCAB -->
+    <div class="page" id="page-teacher-vocab">
+      <div class="ph"><div class="ph-left"><h1>📖 Cập nhật từ vựng</h1><p>Thêm từ mới vào ngân hàng chung cho tất cả học viên</p></div></div>
+      <div class="ve-form">
+        <div style="font-weight:700;font-size:14px;margin-bottom:12px">➕ Thêm từ mới</div>
+        <div class="g2" style="gap:10px;margin-bottom:10px">
+          <div class="fg" style="margin:0"><label>Tiếng Anh *</label><input id="veEn" placeholder="VD: Life jacket"></div>
+          <div class="fg" style="margin:0"><label>Tiếng Việt *</label><input id="veVn" placeholder="VD: Áo phao"></div>
+        </div>
+        <div class="g2" style="gap:10px;margin-bottom:10px">
+          <div class="fg" style="margin:0"><label>Phiên âm IPA</label><input id="vePh" placeholder="/laɪf ˈdʒæk.ɪt/"></div>
+          <div class="fg" style="margin:0"><label>Tag</label><input id="veTag" placeholder="VD: Safety, Service..."></div>
+        </div>
+        <div class="fg"><label>Câu ví dụ *</label><input id="veEx" placeholder="VD: Children must wear a life jacket in the pool."></div>
+        <div class="g2" style="gap:10px;margin-bottom:12px">
+          <div class="fg" style="margin:0"><label>Danh mục *</label>
+            <select id="veCat" onchange="document.getElementById('veNewCatG').style.display=this.value==='__new__'?'block':'none'">
+              <option value="Cable Car">Cable Car</option><option value="Water Park">Water Park</option>
+              <option value="Dining &amp; F&amp;B">Dining &amp; F&amp;B</option><option value="Shows &amp; Entertainment">Shows &amp; Entertainment</option>
+              <option value="General Service">General Service</option><option value="Tickets &amp; Pricing">Tickets &amp; Pricing</option>
+              <option value="__new__">+ Danh mục mới...</option>
+            </select>
+          </div>
+          <div class="fg" style="margin:0;display:none" id="veNewCatG"><label>Tên danh mục mới</label><input id="veNewCat" placeholder="VD: Transport"></div>
+        </div>
+        <div style="display:flex;gap:9px"><button class="btn btn-primary" onclick="addCustomVocab()">➕ Thêm từ</button><button class="btn btn-muted" onclick="clearVeForm()">Xóa form</button></div>
+        <div id="veErr" class="err-msg"></div>
+      </div>
+      <div style="font-weight:700;font-size:14px;margin-bottom:10px">📋 Từ đã thêm (<span id="customVocabCount">0</span>)</div>
+      <div id="customVocabList"></div>
+    </div>
+
+    <!-- TEACHER DIALOGUES -->
+    <div class="page" id="page-teacher-dialogues">
+      <div class="ph">
+        <div class="ph-left"><h1>🗣 Quản lý hội thoại</h1><p>Thêm, chỉnh sửa hội thoại mẫu cho học viên</p></div>
+        <button class="btn btn-primary btn-sm" onclick="openAddDialogue()">+ Thêm hội thoại</button>
+      </div>
+      <div id="teacherDlgList"></div>
+    </div>
+
+    <!-- TEACHER ACCOUNTS -->
+    <div class="page" id="page-teacher-accounts">
+      <div class="ph"><div class="ph-left"><h1>🔐 Quản lý tài khoản</h1></div></div>
+      <div class="itabs">
+        <div class="itab active" onclick="switchI('teacher-accounts','teachers')">👩‍🏫 Giảng viên</div>
+        <div class="itab" onclick="switchI('teacher-accounts','students')">👤 Học viên đăng ký</div>
+      </div>
+      <div class="ipanel active" id="teacher-accounts-teachers">
+        <div style="margin-bottom:14px"><button class="btn btn-primary btn-sm" onclick="openAddTeacher()">+ Thêm giảng viên</button></div>
+        <div id="teacherAccList"></div>
+      </div>
+      <div class="ipanel" id="teacher-accounts-students">
+        <div style="display:flex;gap:9px;margin-bottom:14px;flex-wrap:wrap">
+          <input class="search-bar" id="stuFilterClass" placeholder="Lọc theo lớp..." oninput="renderRegisteredStudents()">
+          <input class="search-bar" id="stuFilterDept" placeholder="Lọc theo tổ..." oninput="renderRegisteredStudents()">
+        </div>
+        <div id="regStudentsList"></div>
+      </div>
+    </div>
+
+    <!-- ADMIN OVERVIEW -->
+    <div class="page" id="page-admin-overview">
+      <div class="ph"><div class="ph-left"><h1>🛡️ Tổng quan hệ thống</h1></div><button class="btn btn-ghost btn-sm" onclick="printPage('page-admin-overview')">🖨️ In</button></div>
+      <div class="g4" id="adminStats" style="margin-bottom:18px"></div>
+      <div class="g2" style="margin-bottom:18px">
+        <div class="card"><div class="card-title">📊 Học viên theo Tổ</div><div id="chartDept"></div></div>
+        <div class="card"><div class="card-title">🎓 Điểm TB theo Lớp</div><div id="chartClass"></div></div>
+      </div>
+      <div class="card"><div class="card-title">📡 Hoạt động gần đây</div><div class="act-feed" id="actFeed"></div></div>
+    </div>
+
+    <!-- ADMIN STUDENTS -->
+    <div class="page" id="page-admin-students">
+      <div class="ph"><div class="ph-left"><h1>👤 Theo dõi học viên</h1></div><button class="btn btn-ghost btn-sm" onclick="printPage('page-admin-students')">🖨️ In</button></div>
+      <div style="display:flex;gap:9px;margin-bottom:14px;flex-wrap:wrap">
+        <input class="search-bar" id="aSearchStu" placeholder="🔍 Tên, mã NV..." oninput="renderAdminStudents()">
+        <select class="filter-sel" id="aFClass" onchange="renderAdminStudents()"><option value="">Tất cả lớp</option><option>A1 – Beginner</option><option>A2 – Elementary</option><option>B1 – Pre-Intermediate</option><option>B2 – Intermediate</option></select>
+        <select class="filter-sel" id="aFDept" onchange="renderAdminStudents()">
+          <option value="">Tất cả tổ</option><option>Tổ Soát vé</option><option>Tổ Hướng dẫn cáp</option>
+          <option>Tổ Vận hành Show &amp; Cầu hôn</option><option>Tổ Lái xe</option>
+          <option>Tổ Hướng dẫn viên tại điểm</option><option>Tổ Biểu diễn</option>
+          <option>Tổ CSKH</option><option>Tổ Y tế</option>
+        </select>
+      </div>
+      <div class="card"><table class="tbl" id="adminStuTbl"></table></div>
+    </div>
+
+    <!-- ADMIN TEACHERS REPORT -->
+    <div class="page" id="page-admin-teachers">
+      <div class="ph"><div class="ph-left"><h1>👩‍🏫 Báo cáo Giảng viên</h1></div><button class="btn btn-ghost btn-sm" onclick="printPage('page-admin-teachers')">🖨️ In</button></div>
+      <div class="card"><div id="adminTeacherRpt"></div></div>
+    </div>
+
+    <!-- ADMIN REPORT -->
+    <div class="page" id="page-admin-report">
+      <div class="ph"><div class="ph-left"><h1>🖨️ Xuất báo cáo</h1></div></div>
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-title">⚙️ Tùy chọn</div>
+        <div class="g2" style="gap:10px;margin-bottom:12px">
+          <div class="fg" style="margin:0"><label>Loại báo cáo</label>
+            <select id="rptType" onchange="previewReport()">
+              <option value="summary">Tổng hợp toàn phòng</option><option value="byclass">Theo lớp</option>
+              <option value="bydept">Theo tổ</option><option value="teachers">Hoạt động GV</option>
+            </select></div>
+          <div class="fg" style="margin:0"><label>Thời gian</label>
+            <select id="rptPeriod"><option value="all">Toàn bộ</option><option value="month">Tháng này</option></select></div>
+        </div>
+        <div style="display:flex;gap:9px">
+          <button class="btn btn-primary btn-sm" onclick="previewReport()">👁 Xem trước</button>
+          <button class="btn btn-accent btn-sm" onclick="printReport()">🖨️ In báo cáo</button>
+        </div>
+      </div>
+      <div class="card" id="rptPreview" style="min-height:250px"></div>
+    </div>
+
+  </div><!-- /mainContent -->
+</div><!-- /app -->
+
+<!-- ══ MODALS ══ -->
+<!-- Submit assignment -->
+<div class="overlay" id="mSubmit">
+  <div class="modal">
+    <h3>📝 Nộp bài tập</h3>
+    <div id="mSubmitDetail" style="margin-bottom:12px;padding:12px;background:#f0f4f8;border-radius:8px;font-size:13px"></div>
+    <div class="fg"><label>Câu trả lời của bạn</label><textarea id="submitAns" placeholder="Viết bằng tiếng Anh..."></textarea></div>
+    <div class="modal-footer"><button class="btn btn-muted" onclick="closeModal('mSubmit')">Hủy</button><button class="btn btn-primary" onclick="submitAssignment()">Nộp bài ✓</button></div>
+  </div>
+</div>
+<!-- Grade assignment -->
+<div class="overlay" id="mGrade">
+  <div class="modal">
+    <h3>✅ Chấm điểm</h3>
+    <div id="mGradeInfo" style="margin-bottom:10px;padding:10px;background:#f0f4f8;border-radius:8px;font-size:12px"></div>
+    <div class="fg"><label>Bài nộp</label><div id="mGradeAns" style="padding:10px;background:#fff;border:1.5px solid var(--border);border-radius:8px;font-size:13px;min-height:50px;white-space:pre-wrap"></div></div>
+    <div class="fg"><label>Điểm (0–100)</label><input type="number" id="gradeScore" min="0" max="100" placeholder="85"></div>
+    <div class="fg"><label>Nhận xét</label><textarea id="gradeFb" placeholder="Nhận xét..." style="min-height:60px"></textarea></div>
+    <div class="modal-footer"><button class="btn btn-muted" onclick="closeModal('mGrade')">Hủy</button><button class="btn btn-success" onclick="submitGrade()">Lưu điểm ✓</button></div>
+  </div>
+</div>
+<!-- Create assignment -->
+<div class="overlay" id="mCreate">
+  <div class="modal">
+    <h3>+ Tạo bài tập mới</h3>
+    <div class="fg"><label>Tiêu đề *</label><input id="newTitle" placeholder="VD: Dialogue – Cable Car Inquiry"></div>
+    <div class="fg"><label>Dạng bài</label>
+      <select id="newType">
+        <option value="dialogue">🗣 Hội thoại (Dialogue Writing)</option>
+        <option value="vocab">📚 Từ vựng trong ngữ cảnh</option>
+        <option value="translate">🔄 Dịch câu (Translation)</option>
+        <option value="roleplay">🎭 Đóng vai (Role-play)</option>
+        <option value="mcq">☑️ Trắc nghiệm (Multiple Choice)</option>
+        <option value="fill">✏️ Điền vào chỗ trống</option>
+        <option value="matching">🔗 Ghép cặp (Matching)</option>
+        <option value="speaking">🎙 Luyện nói (Speaking Prompt)</option>
+        <option value="situation">🚨 Xử lý tình huống</option>
+      </select>
+    </div>
+    <div class="fg"><label>Giao cho lớp</label>
+      <select id="newClass" multiple style="height:90px">
+        <option value="all" selected>Tất cả lớp</option>
+        <option>A1 – Beginner</option><option>A2 – Elementary</option>
+        <option>B1 – Pre-Intermediate</option><option>B2 – Intermediate</option>
+      </select>
+    </div>
+    <div class="fg"><label>Nội dung / Đề bài *</label><textarea id="newContent" placeholder="Mô tả yêu cầu..."></textarea></div>
+    <div class="fg"><label>Hạn nộp</label><input type="date" id="newDeadline"></div>
+    <div class="modal-footer"><button class="btn btn-muted" onclick="closeModal('mCreate')">Hủy</button><button class="btn btn-primary" onclick="createAssignment()">Tạo ✓</button></div>
+  </div>
+</div>
+<!-- Add teacher -->
+<div class="overlay" id="mAddTeacher">
+  <div class="modal">
+    <h3>+ Thêm giảng viên</h3>
+    <div class="fg"><label>Họ tên *</label><input id="newTName" placeholder="Nguyễn Thị Lan"></div>
+    <div class="fg"><label>Bộ phận</label><input id="newTDept" value="Phòng VHDV"></div>
+    <div class="fg"><label>Dạy lớp</label>
+      <select id="newTClasses" multiple style="height:90px">
+        <option>A1 – Beginner</option><option>A2 – Elementary</option>
+        <option>B1 – Pre-Intermediate</option><option>B2 – Intermediate</option>
+      </select>
+    </div>
+    <div class="fg"><label>Tên đăng nhập *</label><input id="newTUser" placeholder="gv_lan"></div>
+    <div class="fg"><label>Mật khẩu *</label>
+      <div class="input-eye"><input type="password" id="newTPass" value="sunworld2025"><button class="eye-btn" onclick="togglePwd('newTPass',this)">👁</button></div>
+    </div>
+    <div id="addTeacherErr" class="err-msg"></div>
+    <div class="modal-footer"><button class="btn btn-muted" onclick="closeModal('mAddTeacher')">Hủy</button><button class="btn btn-primary" onclick="addTeacherAccount()">Tạo tài khoản ✓</button></div>
+  </div>
+</div>
+<!-- Edit Student -->
+<div class="overlay" id="mEditStu">
+  <div class="modal">
+    <h3>✏️ Sửa thông tin học viên</h3>
+    <input type="hidden" id="editStuUser">
+    <div class="fg"><label>Họ tên *</label><input id="editStuName" placeholder="Nguyễn Văn A"></div>
+    <div class="fg"><label>Mã nhân viên *</label><input id="editStuId" placeholder="SW001"></div>
+    <div class="fg"><label>Bộ phận</label>
+      <select id="editStuDept">
+        <option>Tổ Soát vé</option><option>Tổ Hướng dẫn cáp</option><option>Tổ Vận hành Show &amp; Cầu hôn</option>
+        <option>Tổ Lái xe</option><option>Tổ Hướng dẫn viên tại điểm</option><option>Tổ Biểu diễn</option>
+        <option>Tổ CSKH</option><option>Tổ Y tế</option>
+      </select>
+    </div>
+    <div class="fg"><label>Lớp học</label>
+      <select id="editStuClass">
+        <option>A1 – Beginner</option><option>A2 – Elementary</option>
+        <option>B1 – Pre-Intermediate</option><option>B2 – Intermediate</option>
+      </select>
+    </div>
+    <div id="editStuErr" class="err-msg"></div>
+    <div class="modal-footer"><button class="btn btn-muted" onclick="closeModal('mEditStu')">Hủy</button><button class="btn btn-primary" onclick="saveEditStudent()">Lưu ✓</button></div>
+  </div>
+</div>
+<!-- Promote Student -->
+<div class="overlay" id="mPromoteStu">
+  <div class="modal">
+    <h3>🎓 Cho học viên lên lớp</h3>
+    <input type="hidden" id="promoteStuUser">
+    <div id="promoteStuInfo" style="background:var(--bg);border-radius:8px;padding:12px;margin-bottom:14px;font-size:13px;line-height:1.8"></div>
+    <div class="g2" style="gap:10px">
+      <div class="fg" style="margin:0"><label>Lớp hiện tại</label><input id="promoteStuFrom" readonly style="background:#f0f4f8;color:var(--muted)"></div>
+      <div class="fg" style="margin:0"><label>Lên lớp *</label>
+        <select id="promoteStuTo">
+          <option>A1 – Beginner</option><option>A2 – Elementary</option>
+          <option>B1 – Pre-Intermediate</option><option>B2 – Intermediate</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg" style="margin-top:10px"><label>Ghi chú / Lý do lên lớp *</label>
+      <textarea id="promoteStuNote" rows="3" placeholder="VD: Hoàn thành đủ bài tập, đạt điểm TB 80/100, có tiến bộ rõ rệt..."></textarea>
+    </div>
+    <div id="promoteStuErr" class="err-msg"></div>
+    <div class="modal-footer"><button class="btn btn-muted" onclick="closeModal('mPromoteStu')">Hủy</button><button class="btn btn-success" onclick="savePromoteStudent()">Xác nhận lên lớp 🎓</button></div>
+  </div>
+</div>
+<!-- Add/Edit Dialogue -->
+<div class="overlay" id="mDialogue">
+  <div class="modal" style="max-width:600px">
+    <h3 id="dlgModalTitle">+ Thêm hội thoại mới</h3>
+    <div class="g2" style="gap:10px;margin-bottom:10px">
+      <div class="fg" style="margin:0"><label>Tiêu đề (EN) *</label><input id="dlgEn" placeholder="Restaurant Inquiry"></div>
+      <div class="fg" style="margin:0"><label>Tiêu đề (VN)</label><input id="dlgVn" placeholder="Hỏi nhà hàng"></div>
+    </div>
+    <div class="fg"><label>Cấp độ</label>
+      <select id="dlgLevel"><option>Beginner</option><option>Intermediate</option><option>Advanced</option></select>
+    </div>
+    <div class="fg"><label>Các lượt thoại</label>
+      <div id="dlgLinesEditor"></div>
+      <button class="btn btn-muted btn-sm" style="margin-top:8px" onclick="addDlgLine()">+ Thêm lượt thoại</button>
+    </div>
+    <div id="dlgModalErr" class="err-msg"></div>
+    <div class="modal-footer"><button class="btn btn-muted" onclick="closeModal('mDialogue')">Hủy</button><button class="btn btn-primary" onclick="saveDialogue()">Lưu hội thoại ✓</button></div>
+  </div>
+</div>
+<script>
+// ══════════════════════════════════════════════════════════════
+// FIREBASE CONFIG — Fill in your Firebase project config here.
+// Leave empty strings to use local/demo mode (no sharing).
+// Get config from: console.firebase.google.com → Your project
+//   → Project settings → Your apps → Web app → firebaseConfig
+// ══════════════════════════════════════════════════════════════
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyA8GWK3Tj6ZINh8JvOpaSQaa-BOf1TYpoc",
+  authDomain: "vhdv-english.firebaseapp.com",
+  projectId: "vhdv-english",
+  storageBucket: "vhdv-english.firebasestorage.app",
+  messagingSenderId: "1026748708226",
+  appId: "1:1026748708226:web:d446f437adec4547cc0b9b",
+  measurementId: "G-X5QE1FT24K"
+};
+const USE_FIREBASE = !!(FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.projectId);
+
+// ══ FIREBASE INIT ══
+let _db = null;
+if(USE_FIREBASE){
+  try{
+    firebase.initializeApp(FIREBASE_CONFIG);
+    _db = firebase.firestore();
+  }catch(e){ console.warn('Firebase init error',e); }
+}
+
+// ══ IN-MEMORY CACHE (source of truth for sync) ══
+let _cache = { students:null, teachers:null, admin:null, assignments:null, customVocab:null, customDialogues:null };
+
+// ── Firestore helpers ──
+async function _fsGet(col,docId){
+  if(!_db)return null;
+  try{ const d=await _db.collection(col).doc(docId).get(); return d.exists?d.data():null; }catch(e){ return null; }
+}
+async function _fsSet(col,docId,data){
+  if(!_db)return;
+  try{ await _db.collection(col).doc(docId).set(data,{merge:true}); }catch(e){ console.warn('Firestore write error',e); }
+}
+async function _fsList(col){
+  if(!_db)return null;
+  try{ const s=await _db.collection(col).get(); return s.docs.map(d=>({_id:d.id,...d.data()})); }catch(e){ return null; }
+}
+async function _fsDel(col,docId){
+  if(!_db)return;
+  try{ await _db.collection(col).doc(docId).delete(); }catch(e){}
+}
+
+// ── Pull Firestore → localStorage on startup ──
+async function syncFromFirestore(){
+  if(!_db) return;
+  try{
+    const [stuDocs,tchDocs,adminDoc,assignDocs,vocabDoc,dlgDoc] = await Promise.all([
+      _fsList('students'),
+      _fsList('teachers'),
+      _fsGet('config','admin'),
+      _fsList('assignments'),
+      _fsGet('config','customVocab'),
+      _fsGet('config','customDialogues'),
+    ]);
+    if(stuDocs && stuDocs.length) localStorage.setItem('students',JSON.stringify(stuDocs.map(({_id,...r})=>r)));
+    if(tchDocs && tchDocs.length) localStorage.setItem('teachers',JSON.stringify(tchDocs.map(({_id,...r})=>r)));
+    if(adminDoc) localStorage.setItem('adminAcc',JSON.stringify(adminDoc));
+    if(assignDocs && assignDocs.length) localStorage.setItem('assignments',JSON.stringify(assignDocs.map(({_id,...r})=>r)));
+    if(vocabDoc?.words) localStorage.setItem('customVocab',JSON.stringify(vocabDoc.words));
+    if(dlgDoc?.dialogues) localStorage.setItem('customDialogues',JSON.stringify(dlgDoc.dialogues));
+    console.log('✅ Synced from Firestore');
+  }catch(e){ console.warn('Sync error',e); }
+}
+
+// ── Write-through save helpers ──
+function getStudents(){ return JSON.parse(localStorage.getItem('students')||'[]'); }
+function getTeachers(){ return JSON.parse(localStorage.getItem('teachers')||'[]'); }
+function getAdmin(){ return JSON.parse(localStorage.getItem('adminAcc')||'{}'); }
+function getAssignments(){ return JSON.parse(localStorage.getItem('assignments')||'[]'); }
+function getCustomVocab(){ return JSON.parse(localStorage.getItem('customVocab')||'[]'); }
+function getCustomDialogues(){ return JSON.parse(localStorage.getItem('customDialogues')||'[]'); }
+function getAllDialogues(){ return [...DEFAULT_DIALOGUES,...getCustomDialogues()]; }
+
+function saveStudents(arr){
+  localStorage.setItem('students',JSON.stringify(arr));
+  if(_db) arr.forEach(s=>_db.collection('students').doc(s.username).set(s).catch(()=>{}));
+}
+function saveTeachers(arr){
+  localStorage.setItem('teachers',JSON.stringify(arr));
+  if(_db) arr.forEach(t=>_db.collection('teachers').doc(t.username).set(t).catch(()=>{}));
+}
+function saveAdmin(obj){
+  localStorage.setItem('adminAcc',JSON.stringify(obj));
+  if(_db) _db.collection('config').doc('admin').set(obj).catch(()=>{});
+}
+function saveAssignments(arr){
+  localStorage.setItem('assignments',JSON.stringify(arr));
+  if(_db) arr.forEach(a=>_db.collection('assignments').doc(String(a.id)).set(a).catch(()=>{}));
+}
+function saveCustomVocab(arr){
+  localStorage.setItem('customVocab',JSON.stringify(arr));
+  if(_db) _db.collection('config').doc('customVocab').set({words:arr}).catch(()=>{});
+}
+function saveCustomDialogues(arr){
+  localStorage.setItem('customDialogues',JSON.stringify(arr));
+  if(_db) _db.collection('config').doc('customDialogues').set({dialogues:arr}).catch(()=>{});
+}
+function deleteStudentFromDb(username){
+  if(_db) _db.collection('students').doc(username).delete().catch(()=>{});
+}
+function deleteTeacherFromDb(username){
+  if(_db) _db.collection('teachers').doc(username).delete().catch(()=>{});
+}
+
+// ── Track vocabulary learned ──
+function getLearnedVocab(username){ return JSON.parse(localStorage.getItem('learnedVocab_'+username)||'[]'); }
+function saveLearnedVocab(username,arr){
+  localStorage.setItem('learnedVocab_'+username,JSON.stringify(arr));
+  if(_db) _db.collection('learnedVocab').doc(username).set({words:arr,updatedAt:new Date().toISOString()}).catch(()=>{});
+}
+async function syncLearnedVocab(username){
+  if(!_db) return;
+  try{
+    const d=await _db.collection('learnedVocab').doc(username).get();
+    if(d.exists){ localStorage.setItem('learnedVocab_'+username,JSON.stringify(d.data().words||[])); }
+  }catch(e){}
+}
+function toggleLearnedWord(wordEn){
+  if(!S.user||S.role!=='student') return;
+  const username=S.user.username||S.user.id;
+  let learned=getLearnedVocab(username);
+  const has=learned.includes(wordEn);
+  if(has) learned=learned.filter(w=>w!==wordEn);
+  else learned.push(wordEn);
+  saveLearnedVocab(username,learned);
+  // update vocabLearned counter on student record
+  const students=getStudents();
+  const idx=students.findIndex(s=>s.username===username);
+  if(idx>=0){ students[idx].vocabLearned=learned.length; saveStudents(students); }
+  // re-render
+  renderVGrid();
+  if(document.getElementById('page-dashboard')?.classList.contains('active')) renderDashboard();
+}
+function isWordLearned(wordEn){
+  if(!S.user||S.role!=='student') return false;
+  return getLearnedVocab(S.user.username||S.user.id).includes(wordEn);
+}
+
+// ── Sync learnedVocab on startup (called after enterApp) ──
+async function syncLearnedVocabOnLogin(){
+  if(S.role!=='student') return;
+  const username=S.user.username||S.user.id;
+  await syncLearnedVocab(username);
+  // update vocabLearned on local student record too
+  const learned=getLearnedVocab(username);
+  const students=getStudents();
+  const idx=students.findIndex(s=>s.username===username);
+  if(idx>=0 && students[idx].vocabLearned!==learned.length){ students[idx].vocabLearned=learned.length; saveStudents(students); }
+}
+
+// ══ VOCAB DATA ══
+const VOCAB_DATA = {
+  "Cable Car":[
+    {en:"Cable car",vn:"Cáp treo",phonetic:"/ˈkeɪbl kɑːr/",example:"The cable car offers a stunning view of the sea.",tag:"Transport"},
+    {en:"Gondola",vn:"Cabin cáp treo",phonetic:"/ˈɡɒn.də.lə/",example:"Each gondola can carry up to 8 passengers.",tag:"Transport"},
+    {en:"Terminal",vn:"Nhà ga",phonetic:"/ˈtɜː.mɪ.nəl/",example:"Please proceed to the departure terminal.",tag:"Facility"},
+    {en:"Boarding",vn:"Lên cáp treo",phonetic:"/ˈbɔː.dɪŋ/",example:"Boarding will begin in 5 minutes.",tag:"Operation"},
+    {en:"Departure station",vn:"Ga đi – Ánh Dương Station",phonetic:"/dɪˈpɑː.tʃər ˈsteɪ.ʃən/",example:"The departure station is Ánh Dương Station at An Thới port.",tag:"Location"},
+    {en:"Arrival station",vn:"Ga đến – Hòn Thơm Island",phonetic:"/əˈraɪ.vəl ˈsteɪ.ʃən/",example:"The arrival station is located at Hòn Thơm Island.",tag:"Location"},
+    {en:"Round trip",vn:"Vé khứ hồi",phonetic:"/raʊnd trɪp/",example:"A round-trip ticket includes both journeys.",tag:"Ticket"},
+    {en:"One-way ticket",vn:"Vé một chiều",phonetic:"/wʌn weɪ ˈtɪk.ɪt/",example:"Would you like a one-way or round-trip ticket?",tag:"Ticket"},
+    {en:"Queue",vn:"Xếp hàng chờ",phonetic:"/kjuː/",example:"Please join the queue at gate 2.",tag:"Operation"},
+    {en:"Safety harness",vn:"Dây an toàn",phonetic:"/ˈseɪf.ti ˈhɑː.nɪs/",example:"Please keep the safety bar down at all times.",tag:"Safety"},
+    {en:"Capacity",vn:"Sức chứa",phonetic:"/kəˈpæs.ɪ.ti/",example:"The maximum capacity is 8 people per cabin.",tag:"Operation"},
+    {en:"Operating hours",vn:"Giờ hoạt động",phonetic:"/ˈɒp.ər.eɪ.tɪŋ aʊərz/",example:"Operating hours are from 8 AM to 5 PM.",tag:"Info"},
+    {en:"Alight",vn:"Xuống (cáp treo)",phonetic:"/əˈlaɪt/",example:"Please alight carefully and watch your step.",tag:"Operation"},
+    {en:"Cable car operator",vn:"Nhân viên vận hành cáp",phonetic:"/ˈkeɪbl kɑːr ˈɒp.ər.eɪ.tər/",example:"The cable car operator will assist you during boarding.",tag:"Staff"},
+    {en:"Suspension cable",vn:"Cáp treo chính",phonetic:"/səˈspen.ʃən ˈkeɪbl/",example:"The suspension cable supports the entire gondola system.",tag:"Technical"},
+    {en:"Emergency stop",vn:"Dừng khẩn cấp",phonetic:"/ɪˈmɜː.dʒən.si stɒp/",example:"In case of an emergency stop, remain calm and seated.",tag:"Safety"},
+    {en:"Weather delay",vn:"Chậm do thời tiết",phonetic:"/ˈweð.ər dɪˈleɪ/",example:"There is a weather delay due to strong winds.",tag:"Operation"},
+    {en:"Observation deck",vn:"Sàn ngắm cảnh",phonetic:"/ˌɒb.zəˈveɪ.ʃən dek/",example:"The observation deck offers a 360° view.",tag:"Facility"},
+    {en:"Boarding pass",vn:"Thẻ lên cáp",phonetic:"/ˈbɔː.dɪŋ pɑːs/",example:"Please present your boarding pass at the gate.",tag:"Ticket"},
+    {en:"Accessible cabin",vn:"Cabin dành cho người khuyết tật",phonetic:"/əkˈses.ɪ.bl ˈkæb.ɪn/",example:"We have accessible cabins available for guests in wheelchairs.",tag:"Facility"},
+  ],
+  "Water Park":[
+    {en:"Water slide",vn:"Cầu trượt nước",phonetic:"/ˈwɔː.tər slaɪd/",example:"The water slide is 40 meters long!",tag:"Attraction"},
+    {en:"Wave pool",vn:"Hồ sóng",phonetic:"/weɪv puːl/",example:"The wave pool simulates real ocean waves.",tag:"Attraction"},
+    {en:"Lazy river",vn:"Sông lười",phonetic:"/ˈleɪ.zi ˈrɪv.ər/",example:"Relax on a tube in the lazy river.",tag:"Attraction"},
+    {en:"Life jacket",vn:"Áo phao",phonetic:"/laɪf ˈdʒæk.ɪt/",example:"Children must wear a life jacket.",tag:"Safety"},
+    {en:"Locker",vn:"Tủ khóa đồ",phonetic:"/ˈlɒk.ər/",example:"You can store your belongings in a locker.",tag:"Facility"},
+    {en:"Changing room",vn:"Phòng thay đồ",phonetic:"/ˈtʃeɪn.dʒɪŋ ruːm/",example:"The changing room is near the entrance.",tag:"Facility"},
+    {en:"Aquatopia",vn:"Công viên nước Aquatopia",phonetic:"/ˌæk.wəˈtoʊ.pi.ə/",example:"Aquatopia Water Park has over 20 attractions.",tag:"Brand"},
+    {en:"Splash zone",vn:"Khu vui chơi nước",phonetic:"/splæʃ zoʊn/",example:"The splash zone is perfect for young children.",tag:"Attraction"},
+    {en:"Height restriction",vn:"Giới hạn chiều cao",phonetic:"/haɪt rɪˈstrɪk.ʃən/",example:"There is a height restriction of 1.2m for this slide.",tag:"Safety"},
+    {en:"Tube rental",vn:"Thuê phao",phonetic:"/tjuːb ˈren.təl/",example:"Tube rental is available at the pool shop.",tag:"Service"},
+    {en:"Pool attendant",vn:"Nhân viên bể bơi",phonetic:"/puːl əˈten.dənt/",example:"A pool attendant is always on duty.",tag:"Staff"},
+    {en:"Flow rider",vn:"Máy sóng lướt ván",phonetic:"/fləʊ ˈraɪ.dər/",example:"The flow rider is suitable for experienced surfers.",tag:"Attraction"},
+    {en:"Sunscreen station",vn:"Trạm chống nắng",phonetic:"/ˈsʌn.skriːn ˈsteɪ.ʃən/",example:"Apply sunscreen at the sunscreen station before entering.",tag:"Facility"},
+    {en:"Wristband",vn:"Vòng đeo tay (vé)",phonetic:"/ˈrɪst.bænd/",example:"Your wristband gives you unlimited access all day.",tag:"Ticket"},
+    {en:"Depth",vn:"Độ sâu",phonetic:"/depθ/",example:"The pool depth is 1.5 metres in the centre.",tag:"Safety"},
+    {en:"Shower area",vn:"Khu vực tắm tráng",phonetic:"/ˈʃaʊ.ər ˈeə.ri.ə/",example:"Please rinse off at the shower area before entering the pool.",tag:"Facility"},
+    {en:"Float",vn:"Phao bơi",phonetic:"/fləʊt/",example:"You can borrow a float from the equipment counter.",tag:"Equipment"},
+    {en:"No diving",vn:"Cấm lặn đầu",phonetic:"/nəʊ ˈdaɪ.vɪŋ/",example:"No diving is allowed in the shallow end.",tag:"Safety"},
+  ],
+  "Dining & F&B":[
+    {en:"Buffet",vn:"Tiệc buffet",phonetic:"/ˈbʊf.eɪ/",example:"Our seafood buffet opens at noon.",tag:"Dining"},
+    {en:"Seafood",vn:"Hải sản",phonetic:"/ˈsiː.fuːd/",example:"We serve fresh local seafood every day.",tag:"Menu"},
+    {en:"Reservation",vn:"Đặt bàn trước",phonetic:"/ˌrez.əˈveɪ.ʃən/",example:"Would you like to make a reservation?",tag:"Service"},
+    {en:"Vegetarian option",vn:"Món chay",phonetic:"/ˌvedʒ.ɪˈteə.ri.ən/",example:"We have several vegetarian options available.",tag:"Menu"},
+    {en:"Allergen",vn:"Chất gây dị ứng",phonetic:"/ˈæl.ər.dʒən/",example:"Please inform us of any food allergens.",tag:"Safety"},
+    {en:"Complimentary",vn:"Miễn phí / Tặng kèm",phonetic:"/ˌkɒm.plɪˈmen.tər.i/",example:"This welcome drink is complimentary.",tag:"Service"},
+    {en:"Signature dish",vn:"Món đặc trưng",phonetic:"/ˈsɪɡ.nɪ.tʃər dɪʃ/",example:"Our signature dish is grilled Phú Quốc pepper crab.",tag:"Menu"},
+    {en:"Bill / Check",vn:"Hoá đơn",phonetic:"/bɪl/",example:"May I bring you the bill?",tag:"Service"},
+    {en:"Takeaway",vn:"Mang về",phonetic:"/ˈteɪk.ə.weɪ/",example:"Would you prefer dine-in or takeaway?",tag:"Service"},
+    {en:"Food court",vn:"Khu ẩm thực",phonetic:"/fuːd kɔːt/",example:"The food court has 8 stalls to choose from.",tag:"Facility"},
+    {en:"Menu",vn:"Thực đơn",phonetic:"/ˈmen.juː/",example:"Here is our menu – the daily specials are on the board.",tag:"Service"},
+    {en:"Appetizer",vn:"Món khai vị",phonetic:"/ˈæp.ɪ.taɪ.zər/",example:"May I recommend our spring roll appetizer?",tag:"Menu"},
+    {en:"Main course",vn:"Món chính",phonetic:"/meɪn kɔːs/",example:"Your main course will be ready in about 15 minutes.",tag:"Menu"},
+    {en:"Dessert",vn:"Món tráng miệng",phonetic:"/dɪˈzɜːt/",example:"Would you like to see the dessert menu?",tag:"Menu"},
+    {en:"Beverage",vn:"Đồ uống",phonetic:"/ˈbev.ər.ɪdʒ/",example:"Our beverages include fresh coconut water and smoothies.",tag:"Menu"},
+    {en:"Dining area",vn:"Khu vực ăn uống",phonetic:"/ˈdaɪ.nɪŋ ˈeə.ri.ə/",example:"The outdoor dining area overlooks the sea.",tag:"Facility"},
+    {en:"Service charge",vn:"Phí phục vụ",phonetic:"/ˈsɜː.vɪs tʃɑːdʒ/",example:"A 10% service charge is included in the bill.",tag:"Pricing"},
+    {en:"Table for two",vn:"Bàn cho hai người",phonetic:"/ˈteɪ.bl fə tuː/",example:"Do you have a table for two available?",tag:"Phrase"},
+    {en:"Halal",vn:"Thức ăn Halal (chuẩn Hồi giáo)",phonetic:"/həˈlɑːl/",example:"We offer halal-certified options for our Muslim guests.",tag:"Menu"},
+    {en:"Portion",vn:"Khẩu phần",phonetic:"/ˈpɔː.ʃən/",example:"The portion size is generous – perfect for sharing.",tag:"Menu"},
+  ],
+  "Shows & Entertainment":[
+    {en:"Performance",vn:"Buổi biểu diễn",phonetic:"/pəˈfɔː.məns/",example:"The evening performance starts at 7:30 PM.",tag:"Show"},
+    {en:"Showtimes",vn:"Lịch biểu diễn",phonetic:"/ˈʃoʊ.taɪmz/",example:"Showtimes are at 4 PM and 7 PM daily.",tag:"Info"},
+    {en:"Outdoor amphitheater",vn:"Sân khấu ngoài trời",phonetic:"/ˌæm.fɪˈθɪə.tər/",example:"The show is held at the outdoor amphitheater.",tag:"Venue"},
+    {en:"Cultural show",vn:"Chương trình văn hóa",phonetic:"/ˈkʌl.tʃər.əl ʃoʊ/",example:"Enjoy a traditional Vietnamese cultural show.",tag:"Show"},
+    {en:"Fire show",vn:"Màn trình diễn lửa",phonetic:"/faɪər ʃoʊ/",example:"The fire show is the highlight of the evening.",tag:"Show"},
+    {en:"Admission",vn:"Vé vào cửa",phonetic:"/ədˈmɪʃ.ən/",example:"Admission is included in the resort ticket.",tag:"Ticket"},
+    {en:"VIP section",vn:"Khu VIP",phonetic:"/viː aɪ piː ˈsek.ʃən/",example:"VIP section guests receive complimentary drinks.",tag:"Service"},
+    {en:"Interactive",vn:"Tương tác",phonetic:"/ˌɪn.tərˈæk.tɪv/",example:"This is an interactive show – guests can participate.",tag:"Show"},
+    {en:"Photography allowed",vn:"Được phép chụp ảnh",phonetic:"/fəˈtɒɡ.rə.fi əˈlaʊd/",example:"Photography is allowed but please avoid flash.",tag:"Info"},
+    {en:"Proposal stage",vn:"Sân khấu cầu hôn",phonetic:"/prəˈpəʊ.zəl steɪdʒ/",example:"The proposal stage is a romantic setting for couples.",tag:"Venue"},
+    {en:"Costume",vn:"Trang phục biểu diễn",phonetic:"/ˈkɒs.tjuːm/",example:"The performers wear traditional costumes in the cultural show.",tag:"Show"},
+    {en:"Live music",vn:"Âm nhạc trực tiếp",phonetic:"/laɪv ˈmjuː.zɪk/",example:"There is live music at the beach stage every evening.",tag:"Show"},
+    {en:"Seating arrangement",vn:"Sắp xếp chỗ ngồi",phonetic:"/ˈsiː.tɪŋ əˈreɪndʒ.mənt/",example:"The seating arrangement is first-come, first-served.",tag:"Info"},
+    {en:"Duration",vn:"Thời lượng",phonetic:"/djʊˈreɪ.ʃən/",example:"The show duration is approximately 45 minutes.",tag:"Info"},
+    {en:"Encore",vn:"Biểu diễn thêm",phonetic:"/ˈɒŋ.kɔːr/",example:"The audience cheered for an encore after the show.",tag:"Show"},
+    {en:"Sound system",vn:"Hệ thống âm thanh",phonetic:"/saʊnd ˈsɪs.təm/",example:"Our state-of-the-art sound system enhances the experience.",tag:"Technical"},
+  ],
+  "General Service":[
+    {en:"How may I help you?",vn:"Tôi có thể giúp gì?",phonetic:"/haʊ meɪ aɪ help juː/",example:"Good morning! How may I help you today?",tag:"Phrase"},
+    {en:"Certainly",vn:"Chắc chắn rồi",phonetic:"/ˈsɜː.tən.li/",example:"Certainly, let me check that for you.",tag:"Phrase"},
+    {en:"Apologies",vn:"Xin lỗi",phonetic:"/əˈpɒl.ə.dʒɪz/",example:"My apologies for the inconvenience.",tag:"Phrase"},
+    {en:"Assistance",vn:"Sự hỗ trợ",phonetic:"/əˈsɪs.təns/",example:"Please let us know if you need any assistance.",tag:"Service"},
+    {en:"Lost and found",vn:"Đồ thất lạc",phonetic:"/lɒst ənd faʊnd/",example:"Please go to lost and found at Gate 1.",tag:"Service"},
+    {en:"First aid",vn:"Sơ cứu",phonetic:"/fɜːst eɪd/",example:"The first aid station is near the main entrance.",tag:"Safety"},
+    {en:"Emergency exit",vn:"Lối thoát hiểm",phonetic:"/ɪˈmɜː.dʒən.si ˈek.sɪt/",example:"Emergency exits are marked in green.",tag:"Safety"},
+    {en:"Directions",vn:"Chỉ đường",phonetic:"/daɪˈrek.ʃənz/",example:"Can I give you directions to the water park?",tag:"Info"},
+    {en:"Complaint",vn:"Khiếu nại",phonetic:"/kəmˈpleɪnt/",example:"I understand your complaint – let me resolve this.",tag:"Service"},
+    {en:"Feedback",vn:"Phản hồi",phonetic:"/ˈfiːd.bæk/",example:"We appreciate your feedback.",tag:"Service"},
+    {en:"Welcome",vn:"Chào mừng",phonetic:"/ˈwel.kəm/",example:"Welcome to Sun World Hòn Thơm!",tag:"Phrase"},
+    {en:"Enjoy your visit",vn:"Chúc vui vẻ",phonetic:"/ɪnˈdʒɔɪ jɔːr ˈvɪz.ɪt/",example:"Have a wonderful time – enjoy your visit!",tag:"Phrase"},
+    {en:"Customer satisfaction",vn:"Sự hài lòng của khách",phonetic:"/ˈkʌs.tə.mər ˌsæt.ɪsˈfæk.ʃən/",example:"Customer satisfaction is our top priority.",tag:"Service"},
+    {en:"Wheelchair accessible",vn:"Tiếp cận xe lăn",phonetic:"/ˈwiːl.tʃeər əkˈses.ɪ.bl/",example:"All main areas are wheelchair accessible.",tag:"Facility"},
+    {en:"On behalf of",vn:"Thay mặt",phonetic:"/ɒn bɪˈhɑːf əv/",example:"On behalf of Sun World, welcome to Hòn Thơm Island.",tag:"Phrase"},
+    {en:"Inconvenience",vn:"Sự bất tiện",phonetic:"/ˌɪn.kənˈviː.ni.əns/",example:"We apologise for any inconvenience caused.",tag:"Phrase"},
+    {en:"Nearest",vn:"Gần nhất",phonetic:"/ˈnɪə.rɪst/",example:"The nearest restroom is on your right.",tag:"Info"},
+    {en:"Staff member",vn:"Nhân viên",phonetic:"/stɑːf ˈmem.bər/",example:"Please ask any staff member if you need help.",tag:"Staff"},
+  ],
+  "Tickets & Pricing":[
+    {en:"Adult ticket",vn:"Vé người lớn",phonetic:"/ˈæd.ʌlt ˈtɪk.ɪt/",example:"An adult ticket includes all attractions.",tag:"Ticket"},
+    {en:"Child ticket",vn:"Vé trẻ em",phonetic:"/tʃaɪld ˈtɪk.ɪt/",example:"Children under 1m get a free child ticket.",tag:"Ticket"},
+    {en:"Combo package",vn:"Gói combo",phonetic:"/ˈkɒm.bəʊ ˈpæk.ɪdʒ/",example:"Our combo includes cable car + water park.",tag:"Ticket"},
+    {en:"Discount",vn:"Giảm giá",phonetic:"/ˈdɪs.kaʊnt/",example:"Groups of 10+ receive a 15% discount.",tag:"Pricing"},
+    {en:"Refund policy",vn:"Chính sách hoàn tiền",phonetic:"/ˈriː.fʌnd ˈpɒl.ɪ.si/",example:"Tickets are non-refundable once purchased.",tag:"Policy"},
+    {en:"Online booking",vn:"Đặt vé trực tuyến",phonetic:"/ˈɒn.laɪn ˈbʊk.ɪŋ/",example:"Save 10% with online booking.",tag:"Service"},
+    {en:"Peak season",vn:"Mùa cao điểm",phonetic:"/piːk ˈsiː.zən/",example:"Prices are higher during peak season.",tag:"Info"},
+    {en:"Senior citizen",vn:"Người cao tuổi",phonetic:"/ˈsiː.njər ˈsɪt.ɪ.zən/",example:"Senior citizens receive a special rate.",tag:"Ticket"},
+    {en:"Group booking",vn:"Đặt vé theo nhóm",phonetic:"/ɡruːp ˈbʊk.ɪŋ/",example:"For group bookings of 20+, please contact our team.",tag:"Service"},
+    {en:"Ticket counter",vn:"Quầy bán vé",phonetic:"/ˈtɪk.ɪt ˈkaʊn.tər/",example:"Purchase your ticket at the ticket counter near the entrance.",tag:"Facility"},
+    {en:"Barcode / QR code",vn:"Mã vạch / Mã QR",phonetic:"/ˈbɑː.kəʊd/",example:"Please show your QR code at the gate for scanning.",tag:"Operation"},
+    {en:"Validity",vn:"Thời hạn sử dụng",phonetic:"/vəˈlɪd.ɪ.ti/",example:"This ticket has a validity of one day from purchase.",tag:"Policy"},
+    {en:"Surcharge",vn:"Phụ phí",phonetic:"/ˈsɜː.tʃɑːdʒ/",example:"A small surcharge applies during public holidays.",tag:"Pricing"},
+    {en:"Season pass",vn:"Vé theo mùa",phonetic:"/ˈsiː.zən pɑːs/",example:"A season pass gives unlimited visits for 3 months.",tag:"Ticket"},
+  ],
+  "Safety & Emergency":[
+    {en:"Evacuation",vn:"Sơ tán",phonetic:"/ɪˌvæk.juˈeɪ.ʃən/",example:"In case of fire, follow the evacuation plan.",tag:"Emergency"},
+    {en:"Assembly point",vn:"Điểm tập trung",phonetic:"/əˈsem.bli pɔɪnt/",example:"The assembly point is near the main gate.",tag:"Emergency"},
+    {en:"AED / Defibrillator",vn:"Máy sốc tim",phonetic:"/ˌdiː.fɪˈbrɪl.eɪ.tər/",example:"The AED is mounted on the wall near the first aid room.",tag:"Medical"},
+    {en:"CPR",vn:"Hồi sức tim phổi",phonetic:"/ˌsiː piː ˈɑːr/",example:"Our lifeguards are trained in CPR.",tag:"Medical"},
+    {en:"Lifeguard",vn:"Nhân viên cứu hộ",phonetic:"/ˈlaɪf.ɡɑːd/",example:"Our lifeguard is on duty at all times.",tag:"Staff"},
+    {en:"Caution",vn:"Thận trọng",phonetic:"/ˈkɔː.ʃən/",example:"Caution – wet floor ahead.",tag:"Safety"},
+    {en:"Prohibited",vn:"Bị cấm",phonetic:"/prəˈhɪb.ɪ.tɪd/",example:"Glass bottles are prohibited in the pool area.",tag:"Safety"},
+    {en:"Medical assistance",vn:"Hỗ trợ y tế",phonetic:"/ˈmed.ɪ.kəl əˈsɪs.təns/",example:"If you need medical assistance, please contact our staff.",tag:"Medical"},
+    {en:"Incident report",vn:"Báo cáo sự cố",phonetic:"/ˈɪn.sɪ.dənt rɪˈpɔːt/",example:"Please fill in an incident report for any accidents.",tag:"Operation"},
+    {en:"Rope off",vn:"Căng dây cấm vào",phonetic:"/rəʊp ɒf/",example:"The area has been roped off for maintenance.",tag:"Safety"},
+    {en:"Do not enter",vn:"Không được vào",phonetic:"/duː nɒt ˈen.tər/",example:"Do not enter – authorised personnel only.",tag:"Safety"},
+    {en:"Slippery surface",vn:"Bề mặt trơn trượt",phonetic:"/ˈslɪp.ər.i ˈsɜː.fɪs/",example:"Watch your step – the surface can be slippery when wet.",tag:"Safety"},
+  ],
+  "Guest Relations":[
+    {en:"Check-in",vn:"Nhận khách",phonetic:"/ˈtʃek.ɪn/",example:"Welcome! Let me complete your check-in process.",tag:"Operation"},
+    {en:"Itinerary",vn:"Lịch trình",phonetic:"/aɪˈtɪn.ər.ər.i/",example:"Here is today's itinerary for your group tour.",tag:"Planning"},
+    {en:"Amenities",vn:"Tiện nghi",phonetic:"/əˈmiː.nɪ.tiz/",example:"Our amenities include free Wi-Fi and sunbed rentals.",tag:"Facility"},
+    {en:"Concierge",vn:"Nhân viên hỗ trợ khách",phonetic:"/ˌkɒn.siˈeəʒ/",example:"Please ask our concierge for any special requests.",tag:"Staff"},
+    {en:"Guest satisfaction survey",vn:"Khảo sát hài lòng",phonetic:"/ɡest ˌsæt.ɪsˈfæk.ʃən ˈsɜː.veɪ/",example:"Please take a moment to complete our guest satisfaction survey.",tag:"Feedback"},
+    {en:"Loyalty program",vn:"Chương trình khách hàng thân thiết",phonetic:"/ˈlɔɪ.əl.ti ˈprəʊ.ɡræm/",example:"Join our loyalty program and earn points on every visit.",tag:"Service"},
+    {en:"Personalised service",vn:"Dịch vụ cá nhân hóa",phonetic:"/ˈpɜː.sə.nə.laɪzd ˈsɜː.vɪs/",example:"We aim to provide personalised service to every guest.",tag:"Service"},
+    {en:"Escort",vn:"Dẫn đường / Hộ tống",phonetic:"/ɪˈskɔːt/",example:"I will escort you to the VIP seating area.",tag:"Service"},
+    {en:"Exceed expectations",vn:"Vượt mong đợi",phonetic:"/ɪkˈsiːd ˌek.spekˈteɪ.ʃənz/",example:"Our goal is to exceed your expectations at every turn.",tag:"Phrase"},
+    {en:"Warm welcome",vn:"Đón tiếp nồng hậu",phonetic:"/wɔːm ˈwel.kəm/",example:"We extend a warm welcome to all our guests.",tag:"Phrase"},
+    {en:"Multilingual staff",vn:"Nhân viên đa ngôn ngữ",phonetic:"/ˌmʌl.tiˈlɪŋ.ɡwəl stɑːf/",example:"Our multilingual staff can assist in English, Vietnamese and Chinese.",tag:"Staff"},
+    {en:"Special request",vn:"Yêu cầu đặc biệt",phonetic:"/ˈspeʃ.əl rɪˈkwest/",example:"Please inform us in advance of any special requests.",tag:"Service"},
+  ],
+};
+
+// ══ DEFAULT DIALOGUES ══
+const DEFAULT_DIALOGUES = [
+  {id:"dlg1",title:"Cable Car Inquiry",vn_title:"Hỏi về cáp treo",level:"Beginner",isCustom:false,lines:[
+    {role:"guest",en:"Excuse me, where do I board the cable car?",vn:"Xin lỗi, tôi lên cáp treo ở đâu?"},
+    {role:"staff",en:"Good morning! The boarding area is at Ánh Dương Station. Please proceed through gate 2.",vn:"Chào buổi sáng! Khu vực lên cáp tại Ga Ánh Dương. Xin mời qua cổng số 2."},
+    {role:"guest",en:"How long does the ride take?",vn:"Chuyến đi mất bao lâu?"},
+    {role:"staff",en:"The cable car takes about 15 minutes to reach Hòn Thơm Island. The view is absolutely beautiful!",vn:"Khoảng 15 phút để đến Hòn Thơm Island. Cảnh rất đẹp!"},
+    {role:"guest",en:"Is there a weight limit?",vn:"Có giới hạn trọng lượng không?"},
+    {role:"staff",en:"Each gondola carries up to 8 adults. Please follow staff instructions for a safe journey.",vn:"Mỗi cabin chở tối đa 8 người lớn. Xin tuân theo hướng dẫn của nhân viên."},
+  ]},
+  {id:"dlg2",title:"Water Park Information",vn_title:"Thông tin công viên nước",level:"Beginner",isCustom:false,lines:[
+    {role:"guest",en:"What attractions are available at the water park?",vn:"Công viên nước có những trò gì?"},
+    {role:"staff",en:"Aquatopia has over 20 attractions including the giant wave pool, lazy river, water slides, and a splash zone for children.",vn:"Aquatopia có hơn 20 trò chơi gồm hồ sóng, sông lười, cầu trượt và khu trẻ em."},
+    {role:"guest",en:"Do children need to wear life jackets?",vn:"Trẻ em có cần áo phao không?"},
+    {role:"staff",en:"Yes, children under 1.2 metres are required to wear life jackets. We provide them free of charge.",vn:"Có, trẻ dưới 1,2m phải mặc áo phao. Chúng tôi cung cấp miễn phí."},
+  ]},
+  {id:"dlg3",title:"Restaurant & Dining",vn_title:"Nhà hàng & Ăn uống",level:"Intermediate",isCustom:false,lines:[
+    {role:"guest",en:"Can you recommend a good restaurant here?",vn:"Bạn có thể giới thiệu nhà hàng ngon không?"},
+    {role:"staff",en:"Certainly! Our signature restaurant near the beach serves fresh Phú Quốc seafood including pepper crab and grilled fish.",vn:"Chắc chắn! Nhà hàng đặc trưng của chúng tôi gần bãi biển phục vụ hải sản tươi Phú Quốc."},
+    {role:"guest",en:"Do I need a reservation?",vn:"Tôi có cần đặt bàn không?"},
+    {role:"staff",en:"Reservations are recommended for dinner. Would you like me to make one for you?",vn:"Nên đặt bàn trước cho bữa tối. Bạn có muốn tôi đặt không?"},
+    {role:"guest",en:"Yes please, for 4 people at 7 PM tonight.",vn:"Vâng, cho 4 người lúc 7 giờ tối nay."},
+    {role:"staff",en:"Perfect! I'll reserve a table for 4 at 7 PM. May I have your name please?",vn:"Tuyệt! Tôi sẽ đặt bàn 4 người lúc 7 giờ. Cho tôi biết tên của bạn?"},
+  ]},
+  {id:"dlg4",title:"Handling a Complaint",vn_title:"Xử lý khiếu nại",level:"Advanced",isCustom:false,lines:[
+    {role:"guest",en:"I've been waiting 45 minutes! This is unacceptable.",vn:"Tôi đã chờ 45 phút! Thật không chấp nhận được."},
+    {role:"staff",en:"I sincerely apologize for the wait. I completely understand your frustration. May I have your name?",vn:"Tôi thành thật xin lỗi vì sự chờ đợi. Tôi hoàn toàn hiểu sự thất vọng của bạn."},
+    {role:"guest",en:"My name is John. Nobody told us about the delay.",vn:"Tôi tên John. Không ai báo chúng tôi về sự chậm trễ."},
+    {role:"staff",en:"Mr. John, I apologize for the lack of communication. We'll resume in 10 minutes. As compensation, please enjoy complimentary refreshments.",vn:"Ông John, tôi xin lỗi vì thiếu thông tin. Sẽ tiếp tục sau 10 phút. Để bù đắp, xin mời dùng đồ uống miễn phí."},
+    {role:"guest",en:"Thank you, I appreciate that.",vn:"Cảm ơn, tôi đánh giá cao điều đó."},
+    {role:"staff",en:"Thank you for your patience. I'll personally notify you when boarding begins.",vn:"Cảm ơn sự kiên nhẫn. Tôi sẽ trực tiếp thông báo khi bắt đầu lên cáp."},
+  ]},
+  {id:"dlg5",title:"Show Inquiry",vn_title:"Hỏi về show diễn",level:"Intermediate",isCustom:false,lines:[
+    {role:"guest",en:"What shows are on tonight?",vn:"Tối nay có show gì?"},
+    {role:"staff",en:"Tonight we have a Vietnamese cultural show at 7 PM and a fire show at 8:30 PM at the outdoor amphitheater.",vn:"Tối nay có chương trình văn hóa Việt Nam lúc 7 giờ và màn lửa lúc 8:30 tại sân khấu ngoài trời."},
+    {role:"guest",en:"Is admission included in my ticket?",vn:"Vé xem đã bao gồm trong vé của tôi chưa?"},
+    {role:"staff",en:"Yes, both shows are included in your resort ticket. VIP seating is available for an extra fee.",vn:"Có, cả hai show đều gồm trong vé khu du lịch. Chỗ VIP có thêm phí."},
+  ]},
+  {id:"dlg6",title:"Lost Item",vn_title:"Đồ thất lạc",level:"Intermediate",isCustom:false,lines:[
+    {role:"guest",en:"Excuse me, I left my bag at the water park.",vn:"Xin lỗi, tôi để quên túi ở công viên nước."},
+    {role:"staff",en:"I'm sorry to hear that. Can you describe the bag?",vn:"Rất tiếc khi nghe vậy. Bạn có thể mô tả cái túi không?"},
+    {role:"guest",en:"It's a blue backpack with a red zipper. I left it near the wave pool.",vn:"Là ba lô xanh có dây kéo đỏ. Tôi để gần hồ sóng."},
+    {role:"staff",en:"Thank you. Please come with me to our Lost and Found at Gate 1, or I can call ahead to check.",vn:"Cảm ơn. Xin đến văn phòng Đồ thất lạc ở Cổng 1, hoặc tôi có thể gọi trước kiểm tra."},
+  ]},
+];
+
+// ══ SCENARIOS ══
+const SCENARIOS=[
+  {id:"cable",title:"Cable Car Guest",desc:"Khách hỏi cáp treo",avatar:"🚡",flow:[
+    {bot:"Hello! Welcome to Sun World Hòn Thơm. Are you looking for the cable car?",expect:["yes","cable","where","board"],hint:"Try: 'Yes, where do I board the cable car?'",reply:"The boarding area is at Ánh Dương Station, Gate 2. It takes about 15 minutes to reach Hòn Thơm Island. Would you like to know ticket prices?",suggestions:["How much is the ticket?","How long does the ride take?","Thank you!"]},
+    {bot:"An adult round-trip ticket is 750,000 VND. Children under 1m ride free. Shall I explain what's included?",expect:["include","what","yes","tell"],hint:"Try: 'Yes, what is included in the ticket?'",reply:"Your ticket includes the cable car plus access to Aquatopia Water Park and all island facilities. Great value!",suggestions:["Where is the water park?","What time does it close?","Thank you!"]},
+    {bot:"Is there anything else I can help you with?",expect:["thank","ok","no","great"],hint:"Try: 'No thank you, that's all I need.'",reply:"You're welcome! Enjoy your visit. Have a wonderful day! 😊",suggestions:["Thank you!","Have a good day!"]}
+  ]},
+  {id:"waterpark",title:"Water Park Guest",desc:"Khách hỏi công viên nước",avatar:"🌊",flow:[
+    {bot:"Welcome to Aquatopia! How can I help you today?",expect:["slide","pool","what","tell","info","attraction"],hint:"Try: 'What attractions do you have here?'",reply:"We have 20+ attractions: wave pool, lazy river, 8 water slides, and a splash zone for kids! What age group?",suggestions:["I have young children.","We are adults.","What is the height restriction?"]},
+    {bot:"For children, we have the splash zone and mini slides. Life jackets are provided free of charge!",expect:["locker","store","bag","jacket","safe"],hint:"Try: 'Where can we store our bags?'",reply:"Lockers are near the changing rooms. A 50,000 VND deposit is required, fully refunded when you return the key.",suggestions:["Where are changing rooms?","Is food allowed?","Thank you!"]},
+    {bot:"Anything else I can help with?",expect:["thank","no","great"],hint:"Try: 'No thank you!'",reply:"Have an amazing time! Don't forget to try the wave pool! 🌊",suggestions:["Thank you!","See you later!"]}
+  ]},
+  {id:"dining",title:"Restaurant Guest",desc:"Khách tại nhà hàng",avatar:"🍽️",flow:[
+    {bot:"Good evening! Welcome. Do you have a reservation?",expect:["no","table","seat","reservation","book"],hint:"Try: 'No, do you have a table for two?'",reply:"Of course! We have a lovely table available. May I have your name?",suggestions:["My name is...","Table for 4 please.","What do you recommend?"]},
+    {bot:"What cuisine are you in the mood for? We specialize in fresh local seafood.",expect:["seafood","recommend","signature","best","dish"],hint:"Try: 'What is your signature dish?'",reply:"Our signature dish is Phú Quốc pepper crab – freshly caught and grilled with local black pepper!",suggestions:["We'll try the crab!","Vegetarian options?","How much is the buffet?"]},
+    {bot:"Any dietary requirements or allergies I should note?",expect:["allergy","no","none","fine"],hint:"Try: 'No allergies, we're fine with everything.'",reply:"Perfect! Please follow me to your table. Enjoy your dinner! 🦀",suggestions:["Thank you!","Can we see the menu?"]}
+  ]},
+  {id:"complaint",title:"Guest Complaint",desc:"Xử lý khiếu nại",avatar:"😤",flow:[
+    {bot:"The wait time is unacceptable! I've been here for an hour!",expect:["sorry","apologize","understand","help","assist"],hint:"Try: 'I sincerely apologize for the wait. How can I help you?'",reply:"I understand... but I expect something to be done!",suggestions:["I sincerely apologize for the inconvenience.","Please let me look into this for you.","I completely understand your frustration."]},
+    {bot:"I want compensation for this experience!",expect:["compensat","offer","provide","sorry","compliment"],hint:"Try: 'I would like to offer you complimentary refreshments.'",reply:"Fine, but I still want to speak with your manager.",suggestions:["I will get the manager right away.","I can offer complimentary refreshments.","Allow me to personally resolve this."]},
+    {bot:"I want to make a formal complaint.",expect:["note","record","form","contact","certainly","sure"],hint:"Try: 'Certainly, let me record your complaint.'",reply:"Thank you. I hope this doesn't happen again.",suggestions:["We take this very seriously.","Thank you for bringing this to our attention.","We will follow up with you shortly."]}
+  ]},
+  {id:"show",title:"Show & Events",desc:"Hỏi về show diễn",avatar:"🎭",flow:[
+    {bot:"Excuse me, what entertainment is available tonight?",expect:["show","tonight","performance","event","cultural","fire"],hint:"Try: 'We have a cultural show at 7 PM and a fire show at 8:30 PM.'",reply:"Oh wonderful! Where is it held?",suggestions:["At the outdoor amphitheater.","Near the main stage.","By the beach area."]},
+    {bot:"Do I need a separate ticket?",expect:["include","ticket","free","no","admission"],hint:"Try: 'No, both shows are included in your resort ticket.'",reply:"That's great! Is VIP seating available?",suggestions:["Yes, VIP seating is available for an extra charge.","VIP seats have the best view.","I can arrange VIP seating for you."]},
+    {bot:"Can I take photos during the show?",expect:["photo","yes","allow","camera"],hint:"Try: 'Yes, photography is allowed but please avoid flash.'",reply:"Thank you so much for your help!",suggestions:["You're welcome! Enjoy the show!","Have a wonderful evening!"]}
+  ]},
+];
+
+// ══ DEFAULTS ══
+const DEFAULT_TEACHERS = [
+  {username:"gv_lan",password:"sunworld2025",name:"Nguyễn Thị Lan",dept:"Phòng VHDV",teachingClasses:["A1 – Beginner","B1 – Pre-Intermediate"],createdAt:"2025-01-01"},
+  {username:"gv_minh",password:"sunworld2025",name:"Trần Văn Minh",dept:"Phòng VHDV",teachingClasses:["A2 – Elementary","B2 – Intermediate"],createdAt:"2025-01-01"},
+];
+const DEFAULT_ADMIN = {username:"admin",password:"Admin@2025",name:"Quản lý VHDV",role:"admin"};
+const DEFAULT_STUDENTS = [];
+const DEFAULT_ASSIGNMENTS = [
+  {id:1,title:"Cable Car Vocabulary Quiz",type:"vocab",content:"Write 5 sentences using vocabulary about the cable car (boarding, gondola, terminal, round trip, operating hours). Each sentence should be relevant to a guest interaction.",deadline:"2025-07-15",createdBy:"Nguyễn Thị Lan",classGroups:["all"],submissions:{}},
+  {id:2,title:"Dialogue – Handling a Complaint",type:"dialogue",content:"Write a dialogue (min 6 lines) between staff and a guest complaining about a long queue. Staff must: (1) apologize, (2) explain the situation, (3) offer compensation.",deadline:"2025-07-20",createdBy:"Nguyễn Thị Lan",classGroups:["B1 – Pre-Intermediate","B2 – Intermediate"],submissions:{}},
+  {id:3,title:"Role-play: Restaurant Reservation",type:"roleplay",content:"A guest wants a table for 6 at 7:30 PM with one shellfish allergy. Write your complete response as staff: greeting, taking reservation, noting allergy, confirming booking.",deadline:"2025-07-22",createdBy:"Trần Văn Minh",classGroups:["all"],submissions:{}},
+];
+
+// ══ SEED ══
+(function seed(){
+  if(!localStorage.getItem('teachers')) localStorage.setItem('teachers', JSON.stringify(DEFAULT_TEACHERS));
+  if(!localStorage.getItem('students')) localStorage.setItem('students', JSON.stringify(DEFAULT_STUDENTS));
+  if(!localStorage.getItem('adminAcc')) localStorage.setItem('adminAcc', JSON.stringify(DEFAULT_ADMIN));
+  if(!localStorage.getItem('assignments')) localStorage.setItem('assignments', JSON.stringify(DEFAULT_ASSIGNMENTS));
+  if(!localStorage.getItem('customVocab')) localStorage.setItem('customVocab', JSON.stringify([]));
+  if(!localStorage.getItem('customDialogues')) localStorage.setItem('customDialogues', JSON.stringify([]));
+})();
+
+// ══ STATE ══
+let S = {
+  user: null, role: null,
+  vocabCat: Object.keys(VOCAB_DATA)[0],
+  fcList:[], fcIdx:0,
+  currentScenario:null, chatStep:0, chatScore:0, chatTurns:0,
+  quizIdx:0, quizWords:[], quizAnswered:false,
+  currentAssignId: null, gradeCtx:{},
+  editingDlgId: null,
+};
+// (data functions defined above in Firebase sync layer)
+
+// inject saved custom vocab into VOCAB_DATA on load
+(function loadCV(){
+  getCustomVocab().forEach(w=>{
+    if(!VOCAB_DATA[w.cat]) VOCAB_DATA[w.cat]=[];
+    if(!VOCAB_DATA[w.cat].find(x=>x.en===w.en)) VOCAB_DATA[w.cat].push({en:w.en,vn:w.vn,phonetic:w.phonetic,tag:w.tag,example:w.example});
+  });
+})();
+
+// ══ PWA MANIFEST ══
+(function pwa(){
+  const m={name:"Sun World Hòn Thơm – English",short_name:"VHDV English",start_url:"./",display:"standalone",background_color:"#003d7a",theme_color:"#0057a8",orientation:"portrait",icons:[{src:"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='16' fill='%230057a8'/><text y='.9em' font-size='80' x='10'>🌴</text></svg>",sizes:"any",type:"image/svg+xml"}]};
+  const b=new Blob([JSON.stringify(m)],{type:'application/manifest+json'});
+  const l=document.createElement('link');l.rel='manifest';l.href=URL.createObjectURL(b);document.head.appendChild(l);
+})();
+
+// ══ AUTH ══
+function togglePwd(id,btn){ const i=document.getElementById(id);i.type=i.type==='password'?'text':'password';btn.textContent=i.type==='password'?'👁':'🙈'; }
+function toggleRoleHint(){ document.getElementById('teacherHint').style.display=document.getElementById('loginRole').value!=='student'?'block':'none'; }
+function switchAuthTab(t){
+  document.querySelectorAll('.auth-tab').forEach((el,i)=>el.classList.toggle('active',(t==='login'&&i===0)||(t==='register'&&i===1)));
+  document.getElementById('authLogin').classList.toggle('active',t==='login');
+  document.getElementById('authRegister').classList.toggle('active',t==='register');
+  ['loginErr','regErr','regOk'].forEach(id=>document.getElementById(id).style.display='none');
+}
+function dismissSetup(){ document.getElementById('setupScreen').style.display='none'; }
+function showErr(id,msg){ const el=document.getElementById(id);el.textContent=msg;el.style.display='block'; }
+function quickLogin(u,p,r){ document.getElementById('loginRole').value=r;document.getElementById('loginUser').value=u;document.getElementById('loginPass').value=p;doLogin(); }
+
+function doLogin(){
+  const u=document.getElementById('loginUser').value.trim();
+  const p=document.getElementById('loginPass').value;
+  const r=document.getElementById('loginRole').value;
+  document.getElementById('loginErr').style.display='none';
+  if(!u||!p){showErr('loginErr','Vui lòng nhập tên đăng nhập và mật khẩu!');return;}
+  if(r==='admin'){
+    const a=getAdmin();
+    if(u!==a.username||p!==a.password){showErr('loginErr','❌ Tài khoản hoặc mật khẩu không đúng.');return;}
+    enterApp({name:a.name,id:'ADMIN',role:'admin'});
+  } else if(r==='teacher'){
+    const t=getTeachers().find(x=>x.username===u&&x.password===p);
+    if(!t){showErr('loginErr','❌ Tài khoản hoặc mật khẩu không đúng.');return;}
+    enterApp({name:t.name,id:t.username,dept:t.dept,teachingClasses:t.teachingClasses||[],role:'teacher'});
+  } else {
+    const s=getStudents().find(x=>x.username===u&&x.password===p);
+    if(!s){showErr('loginErr','❌ Tài khoản hoặc mật khẩu không đúng.');return;}
+    enterApp({name:s.name,id:s.staffId,username:s.username,dept:s.dept,classGroup:s.classGroup,role:'student'});
+  }
+}
+
+function registerStudent(){
+  const name=document.getElementById('regName').value.trim();
+  const sid=document.getElementById('regId').value.trim().toUpperCase();
+  const dept=document.getElementById('regDept').value;
+  const cls=document.getElementById('regClass').value;
+  const user=document.getElementById('regUser').value.trim().toLowerCase();
+  const pass=document.getElementById('regPass').value;
+  const pass2=document.getElementById('regPass2').value;
+  ['regErr','regOk'].forEach(id=>document.getElementById(id).style.display='none');
+  if(!name||!sid||!dept||!cls||!user||!pass){showErr('regErr','❌ Vui lòng điền đầy đủ!');return;}
+  if(pass.length<6){showErr('regErr','❌ Mật khẩu tối thiểu 6 ký tự!');return;}
+  if(pass!==pass2){showErr('regErr','❌ Mật khẩu không khớp!');return;}
+  if(!/^[a-z0-9_]+$/.test(user)){showErr('regErr','❌ Username chỉ dùng chữ thường, số, gạch dưới!');return;}
+  const students=getStudents();
+  if(students.find(s=>s.username===user)){showErr('regErr','❌ Tên đăng nhập đã tồn tại!');return;}
+  if(students.find(s=>s.staffId===sid)){showErr('regErr','❌ Mã nhân viên đã đăng ký!');return;}
+  students.push({username:user,password:pass,name,staffId:sid,dept,classGroup:cls,vocabLearned:0,assignsDone:0,avgScore:0,registeredAt:new Date().toISOString().split('T')[0]});
+  saveStudents(students);
+  const ok=document.getElementById('regOk');ok.textContent='✅ Đăng ký thành công! Đang chuyển sang đăng nhập...';ok.style.display='block';
+  ['regName','regId','regUser','regPass','regPass2'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('regDept').value='';document.getElementById('regClass').value='';
+  setTimeout(()=>switchAuthTab('login'),1800);
+}
+
+function enterApp(user){
+  S.user=user;S.role=user.role;
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('app').style.display='flex';
+  document.getElementById('sbName').textContent=user.name;
+  document.getElementById('sbRole').textContent=user.role==='admin'?'🛡️ Quản lý cấp cao':user.role==='teacher'?`👩‍🏫 Giảng viên · ${user.id}`:`👤 ${user.id}`;
+  const sbCls=document.getElementById('sbClass');
+  sbCls.innerHTML=user.classGroup?`<span class="sbu-class">${user.classGroup}</span>`:'';
+  document.getElementById('firebaseBadge').style.display=USE_FIREBASE?'block':'none';
+  document.getElementById('localBadge').style.display=USE_FIREBASE?'none':'block';
+  buildNav();
+  navigateTo(user.role==='admin'?'admin-overview':user.role==='teacher'?'teacher-dashboard':'dashboard');
+}
+
+function doLogout(){
+  S.user=null;
+  document.getElementById('app').style.display='none';
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('loginUser').value='';document.getElementById('loginPass').value='';
+  document.getElementById('loginErr').style.display='none';
+}
+
+// ══ NAV ══
+const STUDENT_NAV=[{sec:"Học tập"},{id:"dashboard",i:"📊",l:"Tổng quan"},{id:"vocab",i:"📚",l:"Từ vựng & Hội thoại"},{id:"chat",i:"💬",l:"Luyện tập Chat"},{sec:"Bài tập"},{id:"assignments",i:"📝",l:"Bài tập của tôi"}];
+const TEACHER_NAV=[{sec:"Quản lý"},{id:"teacher-dashboard",i:"📊",l:"Dashboard"},{id:"teacher-assignments",i:"📝",l:"Quản lý bài tập"},{id:"teacher-accounts",i:"🔐",l:"Quản lý tài khoản"},{sec:"Nội dung"},{id:"teacher-vocab",i:"📖",l:"Cập nhật từ vựng"},{id:"teacher-dialogues",i:"🗣",l:"Quản lý hội thoại"},{id:"vocab",i:"📚",l:"Xem từ vựng"},{id:"chat",i:"💬",l:"Demo Chatbot"}];
+const ADMIN_NAV=[{sec:"Tổng quan"},{id:"admin-overview",i:"🛡️",l:"Tổng quan hệ thống"},{sec:"Báo cáo"},{id:"admin-students",i:"👤",l:"Theo dõi học viên"},{id:"admin-teachers",i:"👩‍🏫",l:"Hoạt động GV"},{id:"admin-report",i:"🖨️",l:"Xuất báo cáo"},{sec:"Quản trị"},{id:"teacher-accounts",i:"🔐",l:"Quản lý tài khoản"}];
+
+function buildNav(){
+  const nav=document.getElementById('sidebarNav');nav.innerHTML='';
+  const items=S.role==='admin'?ADMIN_NAV:S.role==='teacher'?TEACHER_NAV:STUDENT_NAV;
+  items.forEach(it=>{
+    if(it.sec){nav.innerHTML+=`<div class="nav-sec">${it.sec}</div>`;}
+    else{nav.innerHTML+=`<div class="nav-item" id="nav-${it.id}" onclick="navigateTo('${it.id}')"><span class="ni">${it.i}</span>${it.l}</div>`;}
+  });
+}
+
+function navigateTo(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const page=document.getElementById('page-'+id);if(page)page.classList.add('active');
+  const nav=document.getElementById('nav-'+id);if(nav)nav.classList.add('active');
+  document.getElementById('pageTitle').textContent='';
+  closeSidebar();
+  if(id==='dashboard')renderDashboard();
+  if(id==='vocab')renderVocab();
+  if(id==='chat')renderChat();
+  if(id==='assignments')renderStudentAssignments();
+  if(id==='teacher-dashboard')renderTeacherDashboard();
+  if(id==='teacher-assignments')renderTeacherAssignments();
+  if(id==='teacher-vocab')renderTeacherVocab();
+  if(id==='teacher-dialogues')renderTeacherDialogues();
+  if(id==='teacher-accounts')renderTeacherAccounts();
+  if(id==='admin-overview')renderAdminOverview();
+  if(id==='admin-students')renderAdminStudents();
+  if(id==='admin-teachers')renderAdminTeachers();
+  if(id==='admin-report')previewReport();
+}
+
+function toggleSidebar(){ document.getElementById('sidebar').classList.toggle('open');document.getElementById('sidebarBg').classList.toggle('open'); }
+function closeSidebar(){ document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebarBg').classList.remove('open'); }
+
+function switchI(pageId,panelId){
+  const ctx=pageId==='ta'?document.getElementById('page-teacher-assignments'):pageId==='teacher-accounts'?document.getElementById('page-teacher-accounts'):document.getElementById('page-'+pageId);
+  if(!ctx)return;
+  ctx.querySelectorAll('.itab').forEach((t,i)=>{t.classList.remove('active');const p=ctx.querySelectorAll('.ipanel')[i];if(p)p.classList.remove('active');});
+  ctx.querySelectorAll('.ipanel').forEach((p,i)=>{if(p.id===`${pageId}-${panelId}`||p.id===`ta-${panelId}`){p.classList.add('active');ctx.querySelectorAll('.itab')[i]?.classList.add('active');}});
+}
+
+// ══ STUDENT DASHBOARD ══
+function renderDashboard(){
+  const hdr=document.getElementById('dashWelcome');
+  const cls=S.user?.classGroup||'—',dept=S.user?.dept||'—';
+  hdr.innerHTML=`<span class="class-badge">${cls}</span> &nbsp;<span class="dept-badge">${dept}</span>`;
+  const totalV=Object.values(VOCAB_DATA).flat().length;
+  const assigns=getAssignments();
+  const uid=S.user?.id||S.user?.username;
+  const myS=assigns.filter(a=>a.submissions[uid]);
+  const scores=myS.filter(a=>a.submissions[uid]?.score!=null).map(a=>a.submissions[uid].score);
+  const avg=scores.length?Math.round(scores.reduce((a,b)=>a+b,0)/scores.length):0;
+  const students=getStudents();const me=students.find(s=>s.staffId===uid||s.username===S.user?.username);
+  const vl=me?.vocabLearned||0;
+  document.getElementById('dashStats').innerHTML=`
+    <div class="sc c1"><div class="lbl">Từ đã học</div><div class="val">${vl}</div><div class="sub">/ ${totalV} từ</div></div>
+    <div class="sc c2"><div class="lbl">Bài đã nộp</div><div class="val">${myS.length}</div><div class="sub">bài tập</div></div>
+    <div class="sc c3"><div class="lbl">Điểm TB</div><div class="val">${avg||'—'}</div><div class="sub">/ 100</div></div>
+    <div class="sc c4"><div class="lbl">Tiến độ</div><div class="val">${Math.round(vl/totalV*100)}%</div><div class="sub">từ vựng</div></div>`;
+  const myClass=S.user?.classGroup;
+  const myAssigns=assigns.filter(a=>a.classGroups?.includes('all')||a.classGroups?.includes(myClass));
+  document.getElementById('dashAssigns').innerHTML=myAssigns.slice(0,4).map(a=>{
+    const sub=a.submissions[uid];
+    const badge=!sub?'<span class="badge b-new">Mới</span>':sub.score!=null?`<span class="badge b-graded">✅ ${sub.score}/100</span>`:'<span class="badge b-pending">Đã nộp</span>';
+    return `<div style="padding:9px 0;border-bottom:1px solid var(--border);font-size:13px"><div style="display:flex;justify-content:space-between">${badge}<span style="font-size:11px;color:var(--muted)">${a.deadline}</span></div><div style="font-weight:600;margin-top:3px">${a.title}</div><div style="color:var(--muted);font-size:11px">${a.createdBy} · ${a.type}</div></div>`;
+  }).join('')||'<div style="color:var(--muted);font-size:13px">Chưa có bài tập.</div>';
+  document.getElementById('dashTips').innerHTML=`<div style="font-size:13px;line-height:1.8;color:#444">📌 Hôm nay hãy thử:<br>• Ôn 10 từ vựng chủ đề <strong>Cable Car</strong><br>• Luyện tình huống <strong>Xử lý khiếu nại</strong><br>• Hoàn thành bài tập mới nhất</div><div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary btn-sm" onclick="navigateTo('vocab')">📚 Học từ</button><button class="btn btn-ghost btn-sm" onclick="navigateTo('chat')">💬 Luyện chat</button></div>`;
+}
+
+// ══ VOCABULARY ══
+function renderVocab(){
+  const cats=Object.keys(VOCAB_DATA);
+  document.getElementById('vcatTabs').innerHTML=cats.map(c=>`<button class="vtab${c===S.vocabCat?' active':''}" onclick="setVcat('${c.replace(/'/g,"\\'")}')">${c}</button>`).join('');
+  renderVGrid();
+  S.fcList=Object.values(VOCAB_DATA).flat();S.fcIdx=0;showFC();
+  renderDialogues();initQuiz();
+}
+function setVcat(c){S.vocabCat=c;document.querySelectorAll('.vtab').forEach(t=>t.classList.toggle('active',t.textContent===c));renderVGrid();}
+function renderVGrid(){
+  const cv=getCustomVocab().map(w=>w.en);
+  document.getElementById('vgrid').innerHTML=(VOCAB_DATA[S.vocabCat]||[]).map(w=>`
+    <div class="vc${cv.includes(w.en)?' custom-vc':''}" onclick="this.classList.toggle('open')">
+      <span class="vtag">${w.tag}</span>
+      ${cv.includes(w.en)?'<span class="custom-mark">★ GV thêm</span>':''}
+      <div class="ven">${w.en}</div><div class="vvn">${w.vn}</div><div class="vph">${w.phonetic||''}</div>
+      <div class="vex">💬 ${w.example}</div>
+    </div>`).join('');
+}
+function showFC(){
+  if(!S.fcList.length)return;
+  const w=S.fcList[S.fcIdx];
+  document.getElementById('fcW').textContent=w.en;document.getElementById('fcVn').textContent=w.vn;
+  document.getElementById('fcPh').textContent=w.phonetic||'';document.getElementById('fcEx').textContent='💬 '+w.example;
+  document.getElementById('fcProg').textContent=`Thẻ ${S.fcIdx+1} / ${S.fcList.length}`;
+  document.getElementById('flashcard').classList.remove('flipped');
+}
+function flipCard(){document.getElementById('flashcard').classList.toggle('flipped');}
+function fcNext(){S.fcIdx=(S.fcIdx+1)%S.fcList.length;showFC();}
+function fcPrev(){S.fcIdx=(S.fcIdx-1+S.fcList.length)%S.fcList.length;showFC();}
+
+function renderDialogues(){
+  const dlgs=getAllDialogues();
+  document.getElementById('dlgList').innerHTML=dlgs.map(d=>`
+    <div class="dlg-card">
+      <div class="dlg-head">
+        <div><div class="dlg-title">🗣 ${d.title}</div><div style="font-size:11px;opacity:.8;margin-top:1px">${d.vn_title||''}</div></div>
+        <div class="dlg-badges"><span class="dlg-level">${d.level}</span>${d.isCustom?'<span class="dlg-custom">GV thêm</span>':''}</div>
+      </div>
+      <div class="dlg-body">${d.lines.map(l=>`
+        <div class="dlg-line">
+          <div class="dlg-role ${l.role}">${l.role==='guest'?'👤 Guest':'🎫 Staff'}</div>
+          <div><div class="dlg-text">${l.en}</div><div class="dlg-vn">${l.vn}</div></div>
+        </div>`).join('')}
+      </div>
+    </div>`).join('');
+}
+
+function initQuiz(){
+  S.quizWords=[...Object.values(VOCAB_DATA).flat()].sort(()=>Math.random()-.5);
+  S.quizIdx=0;renderQuiz();
+}
+function renderQuiz(){
+  const w=S.quizWords[S.quizIdx%S.quizWords.length];
+  const wrongs=Object.values(VOCAB_DATA).flat().filter(x=>x.en!==w.en).sort(()=>Math.random()-.5).slice(0,3).map(x=>x.vn);
+  const opts=[...wrongs,w.vn].sort(()=>Math.random()-.5);
+  S.quizAnswered=false;
+  document.getElementById('quizBox').innerHTML=`
+    <div class="quiz-q">❓ "${w.en}" có nghĩa là gì?<br><small style="font-size:11px;color:var(--muted);font-weight:400">${w.phonetic}</small></div>
+    <div class="quiz-opts">${opts.map(o=>`<div class="quiz-opt" onclick="answerQuiz(this,'${o.replace(/'/g,"\\'")}','${w.vn.replace(/'/g,"\\'")}')">${o}</div>`).join('')}</div>
+    <div class="quiz-fb" id="qfb"></div>`;
+}
+function answerQuiz(el,chosen,correct){
+  if(S.quizAnswered)return;S.quizAnswered=true;
+  document.querySelectorAll('.quiz-opt').forEach(o=>o.classList.add('disabled'));
+  const fb=document.getElementById('qfb');fb.classList.add('show');
+  if(chosen===correct){el.classList.add('correct');fb.className='quiz-fb show good';fb.textContent='✅ Chính xác! Excellent!';}
+  else{el.classList.add('wrong');document.querySelectorAll('.quiz-opt').forEach(o=>{if(o.textContent===correct)o.classList.add('correct');});fb.className='quiz-fb show bad';fb.textContent=`❌ Chưa đúng. Đáp án: "${correct}"`;}
+}
+function nextQuiz(){S.quizIdx++;renderQuiz();}
+
+// ══ CHAT ══
+function renderChat(){
+  document.getElementById('scenList').innerHTML=SCENARIOS.map(s=>`
+    <div class="scenario-item${S.currentScenario?.id===s.id?' active':''}" onclick="selectScenario('${s.id}')">
+      <div class="st">${s.avatar} ${s.title}</div><div class="sd">${s.desc}</div>
+    </div>`).join('');
+}
+function selectScenario(id){
+  S.currentScenario=SCENARIOS.find(s=>s.id===id);S.chatStep=0;S.chatScore=0;S.chatTurns=0;
+  document.getElementById('chatTitle').textContent=S.currentScenario.avatar+' '+S.currentScenario.title;
+  document.querySelectorAll('.scenario-item').forEach(el=>el.classList.toggle('active',el.querySelector('.st')?.textContent.includes(S.currentScenario.title)));
+  const msgs=document.getElementById('chatMsgs');msgs.innerHTML='';
+  addBotMsg(S.currentScenario.flow[0].bot);
+  showSugs(S.currentScenario.flow[0].suggestions||[]);
+  addHint(S.currentScenario.flow[0].hint);
+}
+function addBotMsg(t){const m=document.getElementById('chatMsgs');m.innerHTML+=`<div class="msg bot"><div class="msg-b">${t}</div></div>`;m.scrollTop=m.scrollHeight;}
+function addUserMsg(t){const m=document.getElementById('chatMsgs');m.innerHTML+=`<div class="msg user"><div class="msg-b">${t}</div></div>`;m.scrollTop=m.scrollHeight;}
+function addHint(h){if(!h)return;const m=document.getElementById('chatMsgs');m.innerHTML+=`<div style="text-align:center;color:var(--accent);font-size:11px;font-style:italic;padding:3px">💡 ${h}</div>`;m.scrollTop=m.scrollHeight;}
+function showSugs(s){document.getElementById('chatSugs').innerHTML=s.map(x=>`<button class="sug" onclick="useSug('${x.replace(/'/g,"\\'")}')">${x}</button>`).join('');}
+function useSug(t){document.getElementById('chatInp').value=t;sendChat();}
+function resetChat(){if(S.currentScenario)selectScenario(S.currentScenario.id);}
+function sendChat(){
+  const inp=document.getElementById('chatInp');const t=inp.value.trim();
+  if(!t||!S.currentScenario)return;inp.value='';addUserMsg(t);
+  document.getElementById('chatSugs').innerHTML='';
+  const flow=S.currentScenario.flow;const step=flow[S.chatStep];if(!step)return;
+  S.chatTurns++;const lower=t.toLowerCase();
+  const matched=step.expect.some(k=>lower.includes(k));
+  const score=matched?100:50;S.chatScore+=score;
+  const msgs=document.getElementById('chatMsgs');
+  const bc=score>=80?'sg':score>=50?'so':'sb2';
+  msgs.innerHTML+=`<div style="text-align:right;padding:1px 0"><span class="score-badge ${bc}">${score>=80?'✅ Great!':score>=50?'👍 OK':'💡 Try better'} ${score}/100</span></div>`;
+  setTimeout(()=>{
+    S.chatStep++;
+    if(S.chatStep<flow.length){
+      addBotMsg(flow[S.chatStep-1]?.reply||step.reply);
+      showSugs(flow[S.chatStep].suggestions||[]);addHint(flow[S.chatStep].hint);
+    } else {
+      addBotMsg(flow[flow.length-1].reply);
+      const avg=Math.round(S.chatScore/S.chatTurns);
+      setTimeout(()=>{
+        const g=avg>=80?'🌟 Xuất sắc!':avg>=60?'👍 Tốt!':'💪 Cần luyện thêm!';
+        msgs.innerHTML+=`<div style="text-align:center;padding:14px;background:#f0f4f8;border-radius:10px;margin-top:8px"><div style="font-size:18px;font-weight:800;color:var(--primary)">${g}</div><div style="font-size:13px;color:var(--muted);margin-top:3px">Điểm TB: <strong>${avg}/100</strong></div><button class="btn btn-primary btn-sm" style="margin-top:10px" onclick="resetChat()">🔄 Thử lại</button></div>`;
+        msgs.scrollTop=msgs.scrollHeight;
+      },700);
+    }
+    msgs.scrollTop=msgs.scrollHeight;
+  },600);
+}
+
+// ══ STUDENT ASSIGNMENTS ══
+function renderStudentAssignments(){
+  const assigns=getAssignments();const uid=S.user?.id;const myClass=S.user?.classGroup;
+  const my=assigns.filter(a=>a.classGroups?.includes('all')||a.classGroups?.includes(myClass));
+  document.getElementById('stuAssignList').innerHTML=my.map(a=>{
+    const sub=a.submissions[uid];
+    const status=!sub?'new':sub.score!=null?'graded':'pending';
+    const badgeMap={new:'b-new',graded:'b-graded',pending:'b-pending'};
+    const labelMap={new:'Chưa nộp',graded:`✅ ${sub?.score}/100`,pending:'Đã nộp – chờ chấm'};
+    return `<div class="asgn-card">
+      <div class="asgn-hdr">
+        <div><div class="asgn-title">${a.title}</div><div class="asgn-meta"><span>📁 ${a.type}</span><span>👤 ${a.createdBy}</span><span>📅 ${a.deadline}</span></div></div>
+        <span class="badge ${badgeMap[status]}">${labelMap[status]}</span>
+      </div>
+      <div class="asgn-body">${a.content.replace(/\n/g,'<br>').slice(0,200)}${a.content.length>200?'...':''}</div>
+      ${sub?.score!=null?`<div style="margin-top:9px;padding:9px;background:#d4edda;border-radius:8px;font-size:12px"><strong>Nhận xét:</strong> ${sub.feedback||'(Chưa có)'}</div>`:''}
+      <div class="asgn-actions">
+        ${status!=='graded'?`<button class="btn btn-primary btn-sm" onclick="openSubmit(${a.id})">📤 ${status==='pending'?'Sửa bài':'Nộp bài'}</button>`:''}
+      </div>
+    </div>`;
+  }).join('')||'<div style="color:var(--muted);padding:20px;text-align:center">Chưa có bài tập nào.</div>';
+}
+
+// ══ TEACHER DASHBOARD ══
+function renderTeacherDashboard(){
+  const assigns=getAssignments();const students=getStudents();const me=S.user;
+  const tc=me?.teachingClasses||[];
+  document.getElementById('teacherDashSub').innerHTML=`Lớp phụ trách: ${tc.length?tc.map(c=>`<span class="class-badge">${c}</span>`).join(' '):'<em style="color:var(--muted)">Chưa được phân công lớp</em>'}`;
+  const myAssigns=assigns.filter(a=>a.createdBy===me?.name||a.createdBy===me?.id);
+  const allSubs=myAssigns.flatMap(a=>Object.values(a.submissions));
+  const graded=allSubs.filter(s=>s.score!=null);const pending=allSubs.filter(s=>s.score==null);
+  const avg=graded.length?Math.round(graded.reduce((a,b)=>a+b.score,0)/graded.length):0;
+  document.getElementById('tDashStats').innerHTML=`
+    <div class="sc c1"><div class="lbl">Bài đã giao</div><div class="val">${myAssigns.length}</div></div>
+    <div class="sc c2"><div class="lbl">Chờ chấm</div><div class="val">${pending.length}</div></div>
+    <div class="sc c3"><div class="lbl">Đã chấm</div><div class="val">${graded.length}</div></div>
+    <div class="sc c4"><div class="lbl">Điểm TB</div><div class="val">${avg||'—'}</div></div>`;
+  const myStudents=tc.length?students.filter(s=>tc.includes(s.classGroup)):students;
+  document.getElementById('tDashStudents').innerHTML=myStudents.slice(0,8).map(s=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+      <div style="width:32px;height:32px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0">${s.name.charAt(0)}</div>
+      <div style="flex:1"><div style="font-size:13px;font-weight:600">${s.name}</div><div style="font-size:11px;color:var(--muted)">${s.dept}</div></div>
+      <div><span class="class-badge">${s.classGroup?.split(' – ')[0]}</span></div>
+    </div>`).join('');
+  document.getElementById('tDashAssigns').innerHTML=myAssigns.slice(0,5).map(a=>{
+    const subs=Object.keys(a.submissions).length;const graded=Object.values(a.submissions).filter(s=>s.score!=null).length;
+    return `<div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:13px"><div style="font-weight:600">${a.title}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">📤 ${subs} nộp · ✅ ${graded} chấm · 📅 ${a.deadline}</div>${subs>graded?`<button class="btn btn-accent btn-sm" style="margin-top:5px" onclick="navigateTo('teacher-assignments')">Chấm →</button>`:''}</div>`;
+  }).join('');
+}
+
+// ══ TEACHER ASSIGNMENTS ══
+function renderTeacherAssignments(){
+  const assigns=getAssignments();const me=S.user;
+  const mine=assigns.filter(a=>a.createdBy===me?.name||a.createdBy===me?.id);
+  const all=mine;const pending=mine.filter(a=>Object.values(a.submissions).some(s=>s.score==null));const graded=mine.filter(a=>Object.keys(a.submissions).length&&Object.values(a.submissions).every(s=>s.score!=null));
+  renderTAList('taAll',all);renderTAList('taPending',pending);renderTAList('taGraded',graded);
+}
+function renderTAList(el,assigns){
+  const students=getStudents();
+  document.getElementById(el).innerHTML=assigns.map(a=>{
+    const subs=Object.entries(a.submissions);
+    return `<div class="asgn-card">
+      <div class="asgn-hdr"><div><div class="asgn-title">${a.title}</div><div class="asgn-meta"><span>📁 ${a.type}</span><span>📅 ${a.deadline}</span><span>📤 ${subs.length} nộp</span><span>${(a.classGroups||[]).join(', ')}</span></div></div></div>
+      <div class="asgn-body" style="font-size:12px">${a.content.slice(0,120)}...</div>
+      ${subs.length?`<div style="margin-top:10px">${subs.map(([uid,sub])=>{
+        const stu=students.find(s=>s.staffId===uid||s.username===uid)||{name:uid};
+        return `<div style="padding:7px 10px;background:#f8fafc;border-radius:7px;margin-bottom:5px;font-size:12px;display:flex;align-items:center;justify-content:space-between">
+          <div><strong>${stu.name}</strong><div style="color:var(--muted);margin-top:1px">${sub.answer.slice(0,80)}...</div></div>
+          ${sub.score!=null?`<span class="badge b-graded">✅ ${sub.score}/100</span>`:`<button class="btn btn-accent btn-sm" onclick="openGrade(${a.id},'${uid}')">Chấm</button>`}
+        </div>`;
+      }).join('')}</div>`:'<div style="color:var(--muted);font-size:12px;margin-top:7px">Chưa có bài nộp.</div>'}
+    </div>`;
+  }).join('')||'<div style="color:var(--muted);padding:20px;text-align:center">Không có bài tập.</div>';
+}
+
+// ══ TEACHER VOCAB ══
+function renderTeacherVocab(){
+  const cv=getCustomVocab();
+  document.getElementById('customVocabCount').textContent=cv.length;
+  if(!cv.length){document.getElementById('customVocabList').innerHTML='<div style="color:var(--muted);text-align:center;padding:20px;font-size:13px">Chưa có từ nào được thêm.</div>';return;}
+  const bycat={};cv.forEach((w,i)=>{if(!bycat[w.cat])bycat[w.cat]=[];bycat[w.cat].push({...w,idx:i});});
+  document.getElementById('customVocabList').innerHTML=Object.entries(bycat).map(([cat,words])=>`
+    <div style="margin-bottom:16px">
+      <div style="font-size:13px;font-weight:700;color:var(--primary);margin-bottom:7px;padding-bottom:3px;border-bottom:2px solid var(--primary)">📂 ${cat} (${words.length})</div>
+      ${words.map(w=>`<div class="cvi"><span class="cvi-en">${w.en}</span><span class="cvi-vn">${w.vn}</span><span style="font-size:11px;color:var(--accent)">${w.phonetic||''}</span><button class="btn btn-danger btn-sm" onclick="delCustomVocab(${w.idx})">✕</button></div>`).join('')}
+    </div>`).join('');
+}
+function addCustomVocab(){
+  const en=document.getElementById('veEn').value.trim();const vn=document.getElementById('veVn').value.trim();
+  const ph=document.getElementById('vePh').value.trim();const tag=document.getElementById('veTag').value.trim();
+  const ex=document.getElementById('veEx').value.trim();
+  const catSel=document.getElementById('veCat').value;const catNew=document.getElementById('veNewCat').value.trim();
+  const cat=catSel==='__new__'?catNew:catSel;
+  document.getElementById('veErr').style.display='none';
+  if(!en||!vn||!ex||!cat){showErr('veErr','❌ Vui lòng điền từ, nghĩa, ví dụ, danh mục!');return;}
+  const cv=getCustomVocab();
+  if(cv.find(w=>w.en.toLowerCase()===en.toLowerCase())){showErr('veErr','❌ Từ này đã tồn tại!');return;}
+  cv.push({en,vn,phonetic:ph,tag,example:ex,cat,addedBy:S.user?.name,addedAt:new Date().toISOString().split('T')[0]});
+  saveCustomVocab(cv);
+  if(!VOCAB_DATA[cat])VOCAB_DATA[cat]=[];VOCAB_DATA[cat].push({en,vn,phonetic:ph,tag,example:ex});
+  clearVeForm();renderTeacherVocab();
+  alert(`✅ Đã thêm "${en}" vào danh mục "${cat}"!`);
+}
+function clearVeForm(){['veEn','veVn','vePh','veTag','veEx','veNewCat'].forEach(id=>document.getElementById(id).value='');document.getElementById('veCat').value='Cable Car';document.getElementById('veNewCatG').style.display='none';document.getElementById('veErr').style.display='none';}
+function delCustomVocab(idx){if(!confirm('Xóa từ này?'))return;const cv=getCustomVocab();cv.splice(idx,1);saveCustomVocab(cv);renderTeacherVocab();}
+
+// ══ TEACHER DIALOGUES ══
+function renderTeacherDialogues(){
+  const custom=getCustomDialogues();const all=getAllDialogues();
+  document.getElementById('teacherDlgList').innerHTML=all.map(d=>`
+    <div class="dlg-card">
+      <div class="dlg-head">
+        <div><div class="dlg-title">${d.title}</div><div style="font-size:11px;opacity:.8">${d.vn_title||''}</div></div>
+        <div class="dlg-badges">
+          <span class="dlg-level">${d.level}</span>
+          ${d.isCustom?'<span class="dlg-custom">Tùy chỉnh</span>':'<span style="font-size:10px;background:rgba(255,255,255,.15);padding:2px 7px;border-radius:8px">Mặc định</span>'}
+          ${d.isCustom?`<button class="btn btn-sm" style="padding:2px 8px;background:rgba(255,255,255,.2);color:#fff;font-size:11px" onclick="editDialogue('${d.id}')">✏️ Sửa</button><button class="btn btn-sm" style="padding:2px 8px;background:rgba(231,76,60,.6);color:#fff;font-size:11px" onclick="delDialogue('${d.id}')">🗑</button>`:''}
+        </div>
+      </div>
+      <div class="dlg-body">${d.lines.slice(0,3).map(l=>`<div class="dlg-line"><div class="dlg-role ${l.role}">${l.role==='guest'?'👤 Guest':'🎫 Staff'}</div><div><div class="dlg-text">${l.en}</div></div></div>`).join('')}${d.lines.length>3?`<div style="color:var(--muted);font-size:12px;margin-top:4px">...và ${d.lines.length-3} lượt nữa</div>`:''}</div>
+    </div>`).join('');
+}
+
+function openAddDialogue(){
+  S.editingDlgId=null;
+  document.getElementById('dlgModalTitle').textContent='+ Thêm hội thoại mới';
+  document.getElementById('dlgEn').value='';document.getElementById('dlgVn').value='';
+  document.getElementById('dlgLevel').value='Beginner';
+  document.getElementById('dlgLinesEditor').innerHTML='';
+  ['','',''].forEach((_,i)=>addDlgLine(i===0?'guest':i===1?'staff':'guest'));
+  document.getElementById('dlgModalErr').style.display='none';
+  document.getElementById('mDialogue').classList.add('open');
+}
+function editDialogue(id){
+  const d=getCustomDialogues().find(x=>x.id===id);if(!d)return;
+  S.editingDlgId=id;
+  document.getElementById('dlgModalTitle').textContent='✏️ Sửa hội thoại';
+  document.getElementById('dlgEn').value=d.title;document.getElementById('dlgVn').value=d.vn_title||'';
+  document.getElementById('dlgLevel').value=d.level;
+  document.getElementById('dlgLinesEditor').innerHTML='';
+  d.lines.forEach(l=>addDlgLine(l.role,l.en,l.vn));
+  document.getElementById('dlgModalErr').style.display='none';
+  document.getElementById('mDialogue').classList.add('open');
+}
+function addDlgLine(role='staff',en='',vn=''){
+  const ed=document.getElementById('dlgLinesEditor');
+  const idx=ed.children.length;
+  const div=document.createElement('div');div.className='dlg-line-editor';
+  div.innerHTML=`<div class="dlg-line-row">
+    <select style="padding:5px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;width:90px">
+      <option value="guest"${role==='guest'?' selected':''}>👤 Guest</option>
+      <option value="staff"${role==='staff'?' selected':''}>🎫 Staff</option>
+    </select>
+    <input style="flex:1;padding:6px 9px;border:1.5px solid var(--border);border-radius:6px;font-size:13px" placeholder="English..." value="${en.replace(/"/g,'&quot;')}">
+    <button onclick="this.closest('.dlg-line-editor').remove()" style="padding:5px 8px;background:var(--danger);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px">✕</button>
+  </div>
+  <input style="width:100%;padding:5px 9px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;color:var(--muted);margin-top:4px" placeholder="Tiếng Việt (tuỳ chọn)..." value="${vn.replace(/"/g,'&quot;')}">`;
+  ed.appendChild(div);
+}
+function saveDialogue(){
+  const title=document.getElementById('dlgEn').value.trim();const vnt=document.getElementById('dlgVn').value.trim();
+  const level=document.getElementById('dlgLevel').value;
+  const lineEls=document.getElementById('dlgLinesEditor').querySelectorAll('.dlg-line-editor');
+  document.getElementById('dlgModalErr').style.display='none';
+  if(!title){showErr('dlgModalErr','❌ Vui lòng nhập tiêu đề!');return;}
+  if(lineEls.length<2){showErr('dlgModalErr','❌ Cần ít nhất 2 lượt thoại!');return;}
+  const lines=[];
+  lineEls.forEach(el=>{
+    const role=el.querySelector('select').value;const en=el.querySelectorAll('input')[0].value.trim();const vn=el.querySelectorAll('input')[1].value.trim();
+    if(en)lines.push({role,en,vn});
+  });
+  if(lines.length<2){showErr('dlgModalErr','❌ Cần ít nhất 2 lượt có nội dung!');return;}
+  const cv=getCustomDialogues();
+  if(S.editingDlgId){
+    const idx=cv.findIndex(x=>x.id===S.editingDlgId);if(idx>=0)cv[idx]={...cv[idx],title,vn_title:vnt,level,lines};
+  } else {
+    cv.push({id:'cdlg'+Date.now(),title,vn_title:vnt,level,lines,isCustom:true,addedBy:S.user?.name,addedAt:new Date().toISOString().split('T')[0]});
+  }
+  saveCustomDialogues(cv);closeModal('mDialogue');renderTeacherDialogues();
+  alert(`✅ Đã ${S.editingDlgId?'cập nhật':'thêm'} hội thoại "${title}"!`);
+}
+function delDialogue(id){
+  if(!confirm('Xóa hội thoại này?'))return;
+  const cv=getCustomDialogues().filter(x=>x.id!==id);saveCustomDialogues(cv);renderTeacherDialogues();
+}
+
+// ══ TEACHER ACCOUNTS ══
+function renderTeacherAccounts(){
+  const teachers=getTeachers();
+  document.getElementById('teacherAccList').innerHTML=teachers.length?`
+    <table class="tbl">
+      <thead><tr><th>Họ tên</th><th>Username</th><th>Bộ phận</th><th>Dạy lớp</th><th>Mật khẩu</th><th>Thao tác</th></tr></thead>
+      <tbody>${teachers.map((t,i)=>`<tr>
+        <td><strong>${t.name}</strong></td>
+        <td style="font-family:monospace;color:var(--primary)">${t.username}</td>
+        <td>${t.dept}</td>
+        <td>${(t.teachingClasses||[]).map(c=>`<span class="class-badge" style="margin:1px">${c.split(' – ')[0]}</span>`).join('')||'—'}</td>
+        <td><span id="pw${i}">••••••</span> <button class="btn btn-muted btn-sm" onclick="document.getElementById('pw${i}').textContent=document.getElementById('pw${i}').textContent.includes('•')?'${t.password}':'••••••'">👁</button></td>
+        <td><button class="btn btn-danger btn-sm" onclick="delTeacher(${i})">Xóa</button></td>
+      </tr>`).join('')}</tbody>
+    </table>`
+    :'<div style="color:var(--muted);padding:20px;text-align:center">Chưa có GV nào.</div>';
+  renderRegisteredStudents();
+}
+function delTeacher(i){if(!confirm('Xóa tài khoản GV này?'))return;const t=getTeachers();t.splice(i,1);saveTeachers(t);renderTeacherAccounts();}
+function openAddTeacher(){['newTName','newTUser'].forEach(id=>document.getElementById(id).value='');document.getElementById('newTDept').value='Phòng VHDV';document.getElementById('newTPass').value='sunworld2025';document.getElementById('addTeacherErr').style.display='none';Array.from(document.getElementById('newTClasses').options).forEach(o=>o.selected=false);document.getElementById('mAddTeacher').classList.add('open');}
+function addTeacherAccount(){
+  const name=document.getElementById('newTName').value.trim();const dept=document.getElementById('newTDept').value.trim();
+  const user=document.getElementById('newTUser').value.trim().toLowerCase();const pass=document.getElementById('newTPass').value;
+  const classes=Array.from(document.getElementById('newTClasses').selectedOptions).map(o=>o.value);
+  document.getElementById('addTeacherErr').style.display='none';
+  if(!name||!user||!pass){showErr('addTeacherErr','❌ Điền đầy đủ!');return;}
+  if(pass.length<6){showErr('addTeacherErr','❌ Mật khẩu tối thiểu 6 ký tự!');return;}
+  if(!/^[a-z0-9_]+$/.test(user)){showErr('addTeacherErr','❌ Username không hợp lệ!');return;}
+  const teachers=getTeachers();
+  if(teachers.find(t=>t.username===user)){showErr('addTeacherErr','❌ Username đã tồn tại!');return;}
+  teachers.push({username:user,password:pass,name,dept,teachingClasses:classes,createdAt:new Date().toISOString().split('T')[0]});
+  saveTeachers(teachers);closeModal('mAddTeacher');renderTeacherAccounts();
+  alert(`✅ Đã tạo tài khoản cho ${name}!\nUsername: ${user}\nPassword: ${pass}`);
+}
+function renderRegisteredStudents(){
+  const students=getStudents();
+  const fc=(document.getElementById('stuFilterClass')?.value||'').toLowerCase();
+  const fd=(document.getElementById('stuFilterDept')?.value||'').toLowerCase();
+  const list=students.filter(s=>s.classGroup?.toLowerCase().includes(fc)&&s.dept?.toLowerCase().includes(fd));
+  document.getElementById('regStudentsList').innerHTML=list.length?`
+    <table class="tbl">
+      <thead><tr><th>Họ tên</th><th>Mã NV</th><th>Tổ</th><th>Lớp</th><th>Username</th><th>Đăng ký</th><th>Thao tác</th></tr></thead>
+      <tbody>${list.map(s=>`<tr>
+        <td><strong>${s.name}</strong></td>
+        <td style="font-family:monospace">${s.staffId}</td>
+        <td><span class="dept-badge">${s.dept}</span></td>
+        <td><span class="class-badge">${s.classGroup}</span></td>
+        <td style="font-family:monospace;color:var(--primary)">${s.username}</td>
+        <td style="color:var(--muted)">${s.registeredAt||'—'}</td>
+        <td style="white-space:nowrap">
+          <button class="btn btn-muted btn-sm" onclick="openEditStudent('${s.username}')">✏️ Sửa</button>
+          <button class="btn btn-success btn-sm" style="margin:2px 0" onclick="openPromoteStudent('${s.username}')">🎓 Lên lớp</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteStudent('${s.username}')">🗑</button>
+        </td>
+      </tr>`).join('')}</tbody>
+    </table>
+    <div style="margin-top:8px;font-size:12px;color:var(--muted)">Tổng: <strong>${list.length}</strong> học viên</div>`
+    :'<div style="color:var(--muted);padding:20px;text-align:center">Chưa có học viên nào đăng ký.</div>';
+}
+
+// ══ ASSIGNMENT MODALS ══
+function openSubmit(id){
+  S.currentAssignId=id;const a=getAssignments().find(x=>x.id===id);
+  document.getElementById('mSubmitDetail').innerHTML=`<strong>${a.title}</strong><br><span style="color:var(--muted);font-size:12px">${a.type} · ${a.createdBy}</span><br><br>${a.content.replace(/\n/g,'<br>')}`;
+  const existing=a.submissions[S.user?.id];
+  document.getElementById('submitAns').value=existing?.answer||'';
+  document.getElementById('mSubmit').classList.add('open');
+}
+function submitAssignment(){
+  const ans=document.getElementById('submitAns').value.trim();if(!ans){alert('Vui lòng nhập câu trả lời!');return;}
+  const assigns=getAssignments();const a=assigns.find(x=>x.id===S.currentAssignId);
+  a.submissions[S.user.id]={answer:ans,submittedAt:new Date().toISOString(),score:null,feedback:null};
+  saveAssignments(assigns);closeModal('mSubmit');renderStudentAssignments();alert('✅ Nộp bài thành công!');
+}
+function openGrade(assignId,uid){
+  S.gradeCtx={assignId,uid};const a=getAssignments().find(x=>x.id===assignId);const sub=a.submissions[uid];
+  const students=getStudents();const stu=students.find(s=>s.staffId===uid||s.username===uid)||{name:uid};
+  document.getElementById('mGradeInfo').innerHTML=`<strong>${a.title}</strong><br>Học viên: ${stu.name}`;
+  document.getElementById('mGradeAns').textContent=sub.answer;
+  document.getElementById('gradeScore').value='';document.getElementById('gradeFb').value='';
+  document.getElementById('mGrade').classList.add('open');
+}
+function submitGrade(){
+  const score=parseInt(document.getElementById('gradeScore').value);const fb=document.getElementById('gradeFb').value.trim();
+  if(isNaN(score)||score<0||score>100){alert('Nhập điểm 0–100!');return;}
+  const assigns=getAssignments();const a=assigns.find(x=>x.id===S.gradeCtx.assignId);
+  a.submissions[S.gradeCtx.uid].score=score;a.submissions[S.gradeCtx.uid].feedback=fb||'Good job!';
+  saveAssignments(assigns);closeModal('mGrade');renderTeacherAssignments();alert(`✅ Đã chấm ${score}/100!`);
+}
+function openCreateAssign(){
+  ['newTitle','newContent'].forEach(id=>document.getElementById(id).value='');
+  const d=new Date();d.setDate(d.getDate()+7);document.getElementById('newDeadline').value=d.toISOString().split('T')[0];
+  document.getElementById('mCreate').classList.add('open');
+}
+function createAssignment(){
+  const title=document.getElementById('newTitle').value.trim();const type=document.getElementById('newType').value;
+  const content=document.getElementById('newContent').value.trim();const deadline=document.getElementById('newDeadline').value;
+  const classOpts=Array.from(document.getElementById('newClass').selectedOptions).map(o=>o.value);
+  if(!title||!content||!deadline){alert('Điền đầy đủ thông tin!');return;}
+  const assigns=getAssignments();const newId=Math.max(0,...assigns.map(a=>a.id))+1;
+  assigns.push({id:newId,title,type,content,deadline,createdBy:S.user.name,classGroups:classOpts,status:'open',submissions:{}});
+  saveAssignments(assigns);closeModal('mCreate');renderTeacherAssignments();alert('✅ Đã tạo bài tập!');
+}
+
+// ══ ADMIN ══
+const DEPTS=['Tổ Soát vé','Tổ Hướng dẫn cáp','Tổ Vận hành Show & Cầu hôn','Tổ Lái xe','Tổ Hướng dẫn viên tại điểm','Tổ Biểu diễn','Tổ CSKH','Tổ Y tế'];
+const CLASSES=['A1 – Beginner','A2 – Elementary','B1 – Pre-Intermediate','B2 – Intermediate'];
+
+function renderAdminOverview(){
+  const students=getStudents();const teachers=getTeachers();const assigns=getAssignments();
+  const allSubs=assigns.flatMap(a=>Object.values(a.submissions));
+  const scored=allSubs.filter(s=>s.score!=null);const avg=scored.length?Math.round(scored.reduce((a,b)=>a+b.score,0)/scored.length):0;
+  document.getElementById('adminStats').innerHTML=`
+    <div class="sc c1"><div class="lbl">Học viên</div><div class="val">${students.length}</div></div>
+    <div class="sc c2"><div class="lbl">Giảng viên</div><div class="val">${teachers.length}</div></div>
+    <div class="sc c3"><div class="lbl">Bài tập</div><div class="val">${assigns.length}</div></div>
+    <div class="sc c4"><div class="lbl">Điểm TB</div><div class="val">${avg||'—'}</div></div>`;
+  const mx=Math.max(...DEPTS.map(d=>students.filter(s=>s.dept===d).length),1);
+  document.getElementById('chartDept').innerHTML='<div class="bar-chart">'+DEPTS.map(d=>{const n=students.filter(s=>s.dept===d).length;return`<div class="bar-row"><div class="bar-lbl" title="${d}">${d.replace('Tổ ','')}</div><div class="bar-track"><div class="bar-fill" style="width:${Math.round(n/mx*100)}%"></div></div><div class="bar-val">${n}</div></div>`;}).join('')+'</div>';
+  const mxs=Math.max(...CLASSES.map(c=>{const ss=students.filter(s=>s.classGroup===c);const sc=ss.map(s=>s.avgScore).filter(x=>x>0);return sc.length?Math.round(sc.reduce((a,b)=>a+b,0)/sc.length):0;}),1);
+  document.getElementById('chartClass').innerHTML='<div class="bar-chart">'+CLASSES.map(c=>{const ss=students.filter(s=>s.classGroup===c);const sc=ss.map(s=>s.avgScore).filter(x=>x>0);const avg2=sc.length?Math.round(sc.reduce((a,b)=>a+b,0)/sc.length):0;return`<div class="bar-row"><div class="bar-lbl">${c}</div><div class="bar-track"><div class="bar-fill ac" style="width:${Math.round(avg2/mxs*100)}%;background:var(--accent)"></div></div><div class="bar-val">${avg2||'—'}</div></div>`;}).join('')+'</div>';
+  const acts=[];
+  students.forEach(s=>acts.push({i:'👤',t:`<strong>${s.name}</strong> đăng ký tài khoản`,d:s.registeredAt}));
+  assigns.forEach(a=>Object.entries(a.submissions).forEach(([uid,sub])=>{const stu=students.find(s=>s.staffId===uid||s.username===uid);acts.push({i:'📤',t:`<strong>${stu?.name||uid}</strong> nộp bài <em>${a.title}</em>`,d:(sub.submittedAt||'').split('T')[0]});if(sub.score!=null)acts.push({i:'✅',t:`Bài của <strong>${stu?.name||uid}</strong> được chấm <strong>${sub.score}/100</strong>`,d:(sub.submittedAt||'').split('T')[0]});}));
+  acts.sort((a,b)=>b.d.localeCompare(a.d));
+  document.getElementById('actFeed').innerHTML=acts.slice(0,10).map(a=>`<div class="act-item"><span class="act-ico">${a.i}</span><div><div>${a.t}</div><div class="act-time">${a.d||'—'}</div></div></div>`).join('')||'<div style="color:var(--muted);padding:14px">Chưa có hoạt động.</div>';
+}
+
+function renderAdminStudents(){
+  const students=getStudents();const assigns=getAssignments();
+  const q=(document.getElementById('aSearchStu')?.value||'').toLowerCase();
+  const fc=document.getElementById('aFClass')?.value||'';const fd=document.getElementById('aFDept')?.value||'';
+  const list=students.filter(s=>(!q||s.name.toLowerCase().includes(q)||s.staffId.toLowerCase().includes(q))&&(!fc||s.classGroup===fc)&&(!fd||s.dept===fd));
+  const totalV=Object.values(VOCAB_DATA).flat().length;
+  document.getElementById('adminStuTbl').innerHTML=`<thead><tr><th>Họ tên</th><th>Mã NV</th><th>Tổ</th><th>Lớp</th><th>Từ vựng</th><th>Bài nộp</th><th>Điểm TB</th><th>Thao tác</th></tr></thead><tbody>${list.map(s=>{
+    const subs=assigns.reduce((n,a)=>n+(a.submissions[s.staffId]||a.submissions[s.username]?1:0),0);
+    const scores=assigns.flatMap(a=>{const sub=a.submissions[s.staffId]||a.submissions[s.username];return sub&&sub.score!=null?[sub.score]:[];});
+    const avg=scores.length?Math.round(scores.reduce((a,b)=>a+b,0)/scores.length):s.avgScore||0;
+    const sc=avg>=80?'var(--success)':avg>=60?'var(--accent)':'var(--danger)';
+    return `<tr><td><strong>${s.name}</strong></td><td style="font-family:monospace">${s.staffId}</td><td><span class="dept-badge">${s.dept}</span></td><td><span class="class-badge">${s.classGroup}</span></td><td>${s.vocabLearned||0}/${totalV}</td><td>${subs}/${assigns.length}</td><td style="font-weight:700;color:${sc}">${avg||'—'}</td><td style="white-space:nowrap"><button class="btn btn-muted btn-sm" onclick="openEditStudent('${s.username}')">✏️</button> <button class="btn btn-success btn-sm" onclick="openPromoteStudent('${s.username}')">🎓</button> <button class="btn btn-danger btn-sm" onclick="deleteStudent('${s.username}')">🗑</button></td></tr>`;
+  }).join('')}</tbody>`;
+}
+
+function renderAdminTeachers(){
+  const teachers=getTeachers();const assigns=getAssignments();
+  document.getElementById('adminTeacherRpt').innerHTML=`<table class="tbl"><thead><tr><th>Giảng viên</th><th>Lớp dạy</th><th>Bài giao</th><th>Đã chấm</th><th>Chờ chấm</th><th>Điểm TB chấm</th></tr></thead><tbody>${teachers.map(t=>{
+    const ta=assigns.filter(a=>a.createdBy===t.name);const subs=ta.flatMap(a=>Object.values(a.submissions));const g=subs.filter(s=>s.score!=null);const p=subs.filter(s=>s.score==null);const avg=g.length?Math.round(g.reduce((a,b)=>a+b.score,0)/g.length):0;
+    return `<tr><td><strong>${t.name}</strong><div style="font-size:11px;color:var(--muted)">${t.username}</div></td><td>${(t.teachingClasses||[]).map(c=>`<span class="class-badge" style="margin:1px">${c.split(' – ')[0]}</span>`).join('')||'—'}</td><td style="font-weight:700">${ta.length}</td><td style="color:var(--success);font-weight:700">${g.length}</td><td style="color:${p.length?'var(--accent)':'var(--muted)'};font-weight:700">${p.length}</td><td style="font-weight:700">${avg||'—'}</td></tr>`;
+  }).join('')}</tbody></table><div style="margin-top:12px;padding:10px;background:#e8f0fe;border-radius:8px;font-size:12px">📌 <strong>Tổng:</strong> ${teachers.length} GV · ${assigns.length} bài · ${assigns.flatMap(a=>Object.values(a.submissions)).filter(s=>s.score!=null).length} đã chấm · ${assigns.flatMap(a=>Object.values(a.submissions)).filter(s=>s.score==null).length} chờ</div>`;
+}
+
+function previewReport(){
+  const type=document.getElementById('rptType')?.value||'summary';
+  const students=getStudents();const assigns=getAssignments();const teachers=getTeachers();
+  const now=new Date().toLocaleDateString('vi-VN');
+  let html=`<div style="font-size:13px"><div style="text-align:center;margin-bottom:14px"><div style="font-size:17px;font-weight:800">🌴 Sun World Hòn Thơm</div><div style="color:var(--muted)">BÁO CÁO TIẾN ĐỘ HỌC TIẾNG ANH – Phòng Vận hành Dịch vụ</div><div style="color:var(--muted);font-size:11px">Ngày: ${now}</div></div>`;
+  if(type==='summary'||type==='byclass'){html+=`<table class="tbl" style="margin-bottom:12px"><thead><tr><th>Lớp</th><th>Số HV</th><th>Bài nộp</th><th>Điểm TB</th></tr></thead><tbody>${CLASSES.map(c=>{const cls=students.filter(s=>s.classGroup===c);const scores=cls.flatMap(s=>assigns.flatMap(a=>{const sub=a.submissions[s.staffId]||a.submissions[s.username];return sub&&sub.score!=null?[sub.score]:[];}));const avg=scores.length?Math.round(scores.reduce((a,b)=>a+b,0)/scores.length):0;return`<tr><td>${c}</td><td>${cls.length}</td><td>${scores.length}</td><td><strong>${avg||'—'}</strong></td></tr>`;}).join('')}</tbody></table>`;}
+  if(type==='summary'||type==='bydept'){html+=`<table class="tbl" style="margin-bottom:12px"><thead><tr><th>Tổ</th><th>Số HV</th><th>Điểm TB</th></tr></thead><tbody>${DEPTS.map(d=>{const ds=students.filter(s=>s.dept===d);const sc=ds.map(s=>s.avgScore).filter(x=>x>0);const avg=sc.length?Math.round(sc.reduce((a,b)=>a+b,0)/sc.length):0;return`<tr><td>${d}</td><td>${ds.length}</td><td><strong>${avg||'—'}</strong></td></tr>`;}).join('')}</tbody></table>`;}
+  if(type==='teachers'){html+=`<table class="tbl"><thead><tr><th>GV</th><th>Bài giao</th><th>Đã chấm</th><th>Chờ chấm</th></tr></thead><tbody>${teachers.map(t=>{const ta=assigns.filter(a=>a.createdBy===t.name);const subs=ta.flatMap(a=>Object.values(a.submissions));return`<tr><td>${t.name}</td><td>${ta.length}</td><td>${subs.filter(s=>s.score!=null).length}</td><td>${subs.filter(s=>s.score==null).length}</td></tr>`;}).join('')}</tbody></table>`;}
+  html+='</div>';
+  document.getElementById('rptPreview').innerHTML=html;
+}
+function printReport(){previewReport();setTimeout(()=>{document.querySelectorAll('.page').forEach(p=>p.classList.remove('print-target'));document.getElementById('page-admin-report').classList.add('print-target');window.print();},200);}
+function printPage(id){document.querySelectorAll('.page').forEach(p=>p.classList.remove('print-target'));document.getElementById(id).classList.add('print-target');window.print();}
+
+// ══ STUDENT CRUD ══
+const NEXT_CLASS={'A1 – Beginner':'A2 – Elementary','A2 – Elementary':'B1 – Pre-Intermediate','B1 – Pre-Intermediate':'B2 – Intermediate','B2 – Intermediate':'B2 – Intermediate'};
+function openEditStudent(username){
+  const s=getStudents().find(x=>x.username===username);if(!s)return;
+  document.getElementById('editStuUser').value=username;
+  document.getElementById('editStuName').value=s.name;
+  document.getElementById('editStuId').value=s.staffId;
+  document.getElementById('editStuDept').value=s.dept;
+  document.getElementById('editStuClass').value=s.classGroup;
+  document.getElementById('editStuErr').style.display='none';
+  document.getElementById('mEditStu').classList.add('open');
+}
+function saveEditStudent(){
+  const username=document.getElementById('editStuUser').value;
+  const name=document.getElementById('editStuName').value.trim();
+  const staffId=document.getElementById('editStuId').value.trim().toUpperCase();
+  const dept=document.getElementById('editStuDept').value;
+  const classGroup=document.getElementById('editStuClass').value;
+  if(!name||!staffId){showErr('editStuErr','❌ Vui lòng điền đầy đủ!');return;}
+  const students=getStudents();
+  const idx=students.findIndex(s=>s.username===username);if(idx<0)return;
+  if(students.find((s,i)=>s.staffId===staffId&&i!==idx)){showErr('editStuErr','❌ Mã NV đã tồn tại!');return;}
+  students[idx]={...students[idx],name,staffId,dept,classGroup};
+  saveStudents(students);closeModal('mEditStu');
+  if(document.getElementById('regStudentsList'))renderRegisteredStudents();
+  if(document.getElementById('adminStuTbl'))renderAdminStudents();
+}
+function deleteStudent(username){
+  const s=getStudents().find(x=>x.username===username);
+  if(!confirm(`Xóa học viên "${s?.name||username}"? Hành động này không thể hoàn tác.`))return;
+  saveStudents(getStudents().filter(x=>x.username!==username));
+  if(document.getElementById('regStudentsList'))renderRegisteredStudents();
+  if(document.getElementById('adminStuTbl'))renderAdminStudents();
+}
+function openPromoteStudent(username){
+  const s=getStudents().find(x=>x.username===username);if(!s)return;
+  const assigns=getAssignments();
+  const subs=assigns.filter(a=>a.submissions[s.staffId]||a.submissions[s.username]);
+  const scores=assigns.flatMap(a=>{const sub=a.submissions[s.staffId]||a.submissions[s.username];return sub&&sub.score!=null?[sub.score]:[];});
+  const avg=scores.length?Math.round(scores.reduce((a,b)=>a+b,0)/scores.length):s.avgScore||0;
+  document.getElementById('promoteStuUser').value=username;
+  document.getElementById('promoteStuFrom').value=s.classGroup;
+  document.getElementById('promoteStuTo').value=NEXT_CLASS[s.classGroup]||s.classGroup;
+  document.getElementById('promoteStuNote').value='';
+  document.getElementById('promoteStuInfo').innerHTML=`<strong>${s.name}</strong> &nbsp;·&nbsp; ${s.staffId}<br>Tổ: ${s.dept} &nbsp;·&nbsp; Lớp: <strong>${s.classGroup}</strong><br>Bài đã nộp: <strong>${subs.length}/${assigns.length}</strong> &nbsp;·&nbsp; Điểm TB: <strong style="color:${avg>=70?'var(--success)':'var(--accent)'}">${avg||'—'}</strong>${avg<60&&scores.length?'<br><span style="color:var(--danger);font-size:12px">⚠️ Điểm TB chưa đạt 60 – kiểm tra lại trước khi lên lớp</span>':''}`;
+  document.getElementById('promoteStuErr').style.display='none';
+  document.getElementById('mPromoteStu').classList.add('open');
+}
+function savePromoteStudent(){
+  const username=document.getElementById('promoteStuUser').value;
+  const toClass=document.getElementById('promoteStuTo').value;
+  const note=document.getElementById('promoteStuNote').value.trim();
+  if(!note){showErr('promoteStuErr','❌ Vui lòng điền ghi chú / lý do lên lớp!');return;}
+  const students=getStudents();
+  const idx=students.findIndex(s=>s.username===username);if(idx<0)return;
+  const oldClass=students[idx].classGroup;
+  students[idx]={...students[idx],classGroup:toClass,promotionHistory:[...(students[idx].promotionHistory||[]),{from:oldClass,to:toClass,note,date:new Date().toISOString().split('T')[0],by:S.user?.name}]};
+  saveStudents(students);closeModal('mPromoteStu');
+  if(document.getElementById('regStudentsList'))renderRegisteredStudents();
+  if(document.getElementById('adminStuTbl'))renderAdminStudents();
+  alert(`✅ Đã chuyển ${students[idx].name} lên lớp ${toClass}!`);
+}
+
+// ══ MODALS ══
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.overlay').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');}));
+
+// ══ ONLINE / OFFLINE ══
+window.addEventListener('offline',()=>document.getElementById('offlineBanner').style.display='block');
+window.addEventListener('online',()=>document.getElementById('offlineBanner').style.display='none');
+
+// ══ SHOW SETUP IF NO FIREBASE ══
+window.addEventListener('DOMContentLoaded',()=>{
+  if(!USE_FIREBASE && !localStorage.getItem('setupDismissed')){}
+  document.getElementById('firebaseBadge').style.display=USE_FIREBASE?'block':'none';
+  document.getElementById('localBadge').style.display=USE_FIREBASE?'none':'block';
+});
+function dismissSetup(){document.getElementById('setupScreen').style.display='none';localStorage.setItem('setupDismissed','1');}
+</script>
+</body>
+</html>
